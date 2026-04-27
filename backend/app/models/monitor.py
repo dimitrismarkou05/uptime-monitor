@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime, Enum, func
+from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -18,20 +18,18 @@ class Monitor(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
     alert_status: Mapped[str] = mapped_column(String(10), default="UP")
-    last_alerted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    next_check_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_alerted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_check_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.timezone('UTC', func.now()),
-        default=lambda: datetime.now(timezone.utc)  # Fallback for unit tests
+        server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.timezone('UTC', func.now()),
-        onupdate=func.timezone('UTC', func.now()),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        server_default=func.now(),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     user: Mapped["User"] = relationship("User", back_populates="monitors")
