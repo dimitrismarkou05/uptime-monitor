@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import String, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -17,4 +17,8 @@ class User(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         default=lambda: datetime.now(timezone.utc),
+    )
+
+    monitors: Mapped[list["Monitor"]] = relationship(
+        "Monitor", back_populates="user", cascade="all, delete-orphan"
     )

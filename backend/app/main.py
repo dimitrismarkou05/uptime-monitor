@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.monitors import router as monitors_router
+
 app = FastAPI(
     title="Uptime Monitor API",
     description="URL uptime monitoring and alerting system",
@@ -14,6 +16,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(monitors_router, prefix="/api/v1/monitors", tags=["Monitors"])
 
 
 @app.get("/health", tags=["Health"])
