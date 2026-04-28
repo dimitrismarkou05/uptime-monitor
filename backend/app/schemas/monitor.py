@@ -11,7 +11,7 @@ class MonitorBase(BaseModel):
 
 
 class MonitorCreate(MonitorBase):
-    user_id: UUID
+    pass  # user_id comes from JWT token
 
 
 class MonitorRead(MonitorBase):

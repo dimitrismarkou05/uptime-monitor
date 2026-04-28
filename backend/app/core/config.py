@@ -21,8 +21,7 @@ class Settings(BaseSettings):
 
     # Supabase Auth
     supabase_url: str | None = None
-    supabase_anon_key: str | None = None
-    supabase_jwt_secret: str | None = None
+    supabase_service_key: str | None = None
 
     # SMTP / Alerts
     smtp_host: str = "localhost"
