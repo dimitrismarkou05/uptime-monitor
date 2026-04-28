@@ -6,3 +6,4 @@ __pycache__/
 alembic/versions/*.py
 !alembic/versions/.gitkeep
 .pytest_cache/
+celerybeat-schedule
