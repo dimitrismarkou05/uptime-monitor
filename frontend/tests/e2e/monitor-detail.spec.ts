@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Monitor Detail", () => {
   test.beforeEach(async ({ page }) => {
-    // Set up authentication routes
     await page.route("**/api/v1/users/sync*", async (route) => {
       await route.fulfill({
         status: 200,
@@ -15,33 +14,34 @@ test.describe("Monitor Detail", () => {
       });
     });
 
-    // Set up monitor list route
-    await page.route("**/api/v1/monitors/", async (route) => {
-      if (route.request().method() === "GET") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify([
-            {
-              id: "mon-123",
-              user_id: "test-user-id",
-              url: "https://google.com",
-              interval_seconds: 300,
-              is_active: true,
-              alert_status: "UP",
-              last_alerted_at: null,
-              next_check_at: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ]),
-        });
-      } else {
-        await route.fallback();
-      }
-    });
+    await page.route(
+      (url) => url.pathname === "/api/v1/monitors/",
+      async (route) => {
+        if (route.request().method() === "GET") {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify([
+              {
+                id: "mon-123",
+                user_id: "test-user-id",
+                url: "https://google.com/",
+                interval_seconds: 300,
+                is_active: true,
+                alert_status: "UP",
+                last_alerted_at: null,
+                next_check_at: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            ]),
+          });
+        } else {
+          await route.fallback();
+        }
+      },
+    );
 
-    // Set up specific monitor route (added wildcard to catch trailing slashes)
     await page.route("**/api/v1/monitors/mon-123*", async (route) => {
       await route.fulfill({
         status: 200,
@@ -49,7 +49,7 @@ test.describe("Monitor Detail", () => {
         body: JSON.stringify({
           id: "mon-123",
           user_id: "test-user-id",
-          url: "https://google.com",
+          url: "https://google.com/",
           interval_seconds: 300,
           is_active: true,
           alert_status: "UP",
@@ -61,7 +61,6 @@ test.describe("Monitor Detail", () => {
       });
     });
 
-    // Set up ping stats route
     await page.route(
       "**/api/v1/pings/monitor/mon-123/stats*",
       async (route) => {
@@ -79,7 +78,6 @@ test.describe("Monitor Detail", () => {
       },
     );
 
-    // Set up ping history route
     await page.route(
       "**/api/v1/pings/monitor/mon-123?limit=10*",
       async (route) => {
@@ -101,45 +99,36 @@ test.describe("Monitor Detail", () => {
       },
     );
 
-    // First navigate to a page to establish a valid origin, then set localStorage
     await page.goto("http://localhost:5173");
     await page.evaluate(() => {
       localStorage.setItem("access_token", "fake-test-token");
     });
 
-    // Navigate to dashboard to initialize the app state
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
   });
 
   test("navigates to monitor detail and shows stats", async ({ page }) => {
-    await page.getByText("https://google.com").click();
+    await page.getByRole("button", { name: /google\.com/ }).click();
     await expect(page).toHaveURL("/monitor/mon-123");
     await expect(
-      page.getByRole("heading", { name: "https://google.com" }),
+      page.getByRole("heading", { name: /google\.com/ }),
     ).toBeVisible();
     await expect(page.getByText("99%")).toBeVisible();
     await expect(page.getByText("150ms")).toBeVisible();
   });
 
   test("shows back button to dashboard", async ({ page }) => {
-    // Ensure we are logged in on this fresh load
-    await page.goto("/");
-    await page.evaluate(() =>
-      localStorage.setItem("access_token", "fake-test-token"),
-    );
-
     await page.goto("/monitor/mon-123");
     await expect(
-      page.getByRole("heading", { name: "https://google.com" }),
+      page.getByRole("heading", { name: /google\.com/ }),
     ).toBeVisible();
 
-    await page.locator('button:has-text("Back"):visible').click();
+    await page.getByRole("button", { name: /back/i }).click();
     await expect(page).toHaveURL("/dashboard");
   });
 
   test("shows not found for invalid monitor", async ({ page }) => {
-    // Override the monitor route for invalid-id
     await page.route("**/api/v1/monitors/invalid-id*", async (route) => {
       await route.fulfill({
         status: 404,
@@ -148,7 +137,6 @@ test.describe("Monitor Detail", () => {
       });
     });
 
-    // Mock both ping endpoints explicitly for invalid-id
     await page.route(
       "**/api/v1/pings/monitor/invalid-id/stats*",
       async (route) => {

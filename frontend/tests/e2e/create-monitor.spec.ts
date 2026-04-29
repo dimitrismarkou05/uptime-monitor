@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Monitor Creation", () => {
   test.beforeEach(async ({ page }) => {
-    // Mock ALL backend API calls before any navigation
     await page.route(
       "http://localhost:8000/api/v1/users/sync",
       async (route) => {
@@ -18,8 +17,9 @@ test.describe("Monitor Creation", () => {
       },
     );
 
+    // Use pathname matcher so query params (skip/limit) don't break the mock
     await page.route(
-      "http://localhost:8000/api/v1/monitors/",
+      (url) => url.pathname === "/api/v1/monitors/",
       async (route) => {
         if (route.request().method() === "GET") {
           await route.fulfill({
@@ -34,7 +34,7 @@ test.describe("Monitor Creation", () => {
             body: JSON.stringify({
               id: "new-monitor-id",
               user_id: "test-user-id",
-              url: "https://google.com",
+              url: "https://google.com/",
               interval_seconds: 300,
               is_active: true,
               alert_status: "UP",
@@ -44,11 +44,12 @@ test.describe("Monitor Creation", () => {
               updated_at: new Date().toISOString(),
             }),
           });
+        } else {
+          await route.fallback();
         }
       },
     );
 
-    // Set fake token and navigate to login first (so localStorage is set for domain)
     await page.goto("/login");
     await page.evaluate(() => {
       localStorage.setItem("access_token", "fake-test-token");
@@ -65,7 +66,6 @@ test.describe("Monitor Creation", () => {
 
   test("opens monitor form when clicking add", async ({ page }) => {
     await page.goto("/dashboard");
-
     await page.getByRole("button", { name: "+ Add Monitor" }).click();
     await expect(
       page.getByRole("heading", { name: "New Monitor" }),
@@ -74,11 +74,16 @@ test.describe("Monitor Creation", () => {
 
   test("validates URL field is required", async ({ page }) => {
     await page.goto("/dashboard");
-
     await page.getByRole("button", { name: "+ Add Monitor" }).click();
+
+    // Ensure form is stable before attempting click
+    await expect(
+      page.getByRole("heading", { name: "New Monitor" }),
+    ).toBeVisible();
+
     await page.getByRole("button", { name: "Save Monitor" }).click();
 
-    // HTML5 validation should prevent submission
+    // HTML5 validation should prevent submission — form should still be visible
     await expect(
       page.getByRole("heading", { name: "New Monitor" }),
     ).toBeVisible();

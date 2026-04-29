@@ -21,7 +21,7 @@ test.describe("Monitor Management", () => {
       {
         id: "mon-123",
         user_id: "test-user-id",
-        url: "https://example.com",
+        url: "https://example.com/",
         interval_seconds: 300,
         is_active: true,
         alert_status: "UP",
@@ -33,18 +33,23 @@ test.describe("Monitor Management", () => {
     ];
 
     await page.route(
-      "http://localhost:8000/api/v1/monitors/**",
+      (url) =>
+        url.pathname === "/api/v1/monitors/" ||
+        url.pathname === "/api/v1/monitors/mon-123",
       async (route) => {
         const method = route.request().method();
-        const url = route.request().url();
+        const url = new URL(route.request().url());
 
-        if (url.endsWith("/monitors/") && method === "GET") {
+        if (url.pathname === "/api/v1/monitors/" && method === "GET") {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
             body: JSON.stringify(monitors),
           });
-        } else if (url.includes("/monitors/mon-123") && method === "PATCH") {
+        } else if (
+          url.pathname === "/api/v1/monitors/mon-123" &&
+          method === "PATCH"
+        ) {
           const body = await route.request().postDataJSON();
           monitors[0] = { ...monitors[0], ...body };
           await route.fulfill({
@@ -52,7 +57,10 @@ test.describe("Monitor Management", () => {
             contentType: "application/json",
             body: JSON.stringify(monitors[0]),
           });
-        } else if (url.includes("/monitors/mon-123") && method === "DELETE") {
+        } else if (
+          url.pathname === "/api/v1/monitors/mon-123" &&
+          method === "DELETE"
+        ) {
           monitors = [];
           await route.fulfill({ status: 204 });
         } else {
@@ -69,7 +77,6 @@ test.describe("Monitor Management", () => {
   });
 
   test("deletes monitor", async ({ page }) => {
-    // Handle the native confirm dialog
     page.on("dialog", async (dialog) => {
       expect(dialog.type()).toBe("confirm");
       await dialog.accept();
@@ -77,7 +84,6 @@ test.describe("Monitor Management", () => {
 
     await page.getByRole("button", { name: "Delete" }).click();
 
-    // Wait for re-fetch and empty state
     await expect(page.getByText("No monitors yet")).toBeVisible({
       timeout: 10000,
     });
@@ -89,7 +95,7 @@ test.describe("Monitor Management", () => {
       page.getByRole("heading", { name: "Edit Monitor" }),
     ).toBeVisible();
     await expect(
-      page.locator('input[value="https://example.com"]'),
+      page.locator('input[value="https://example.com/"]'),
     ).toBeVisible();
   });
 });
