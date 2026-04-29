@@ -5,6 +5,17 @@ import { MemoryRouter } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import Login from "./Login";
 
+// Mock auth.ts BEFORE any import resolves it (eager Supabase client creation)
+vi.mock("../api/auth", () => ({
+  signIn: vi.fn(),
+  signUp: vi.fn(),
+  signOut: vi.fn(),
+  updateEmail: vi.fn(),
+  updatePassword: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  getToken: vi.fn(),
+}));
+
 vi.mock("../hooks/useAuth");
 
 type AuthHook = ReturnType<typeof useAuth>;

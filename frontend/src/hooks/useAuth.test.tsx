@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act } from "react";
 import type { ReactNode } from "react";
 
 vi.mock("../api/auth", () => ({
@@ -58,7 +59,9 @@ describe("useAuth", () => {
       wrapper: createWrapper(),
     });
 
-    await result.current.login(["a@b.com", "pass"]);
+    await act(async () => {
+      await result.current.login(["a@b.com", "pass"]);
+    });
     await waitFor(() => expect(result.current.isLoggingIn).toBe(false));
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
   });
@@ -78,7 +81,9 @@ describe("useAuth", () => {
       wrapper: createWrapper(),
     });
 
-    await result.current.register(["a@b.com", "pass"]);
+    await act(async () => {
+      await result.current.register(["a@b.com", "pass"]);
+    });
     await waitFor(() => expect(result.current.isRegistering).toBe(false));
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
   });
@@ -92,7 +97,9 @@ describe("useAuth", () => {
       wrapper: createWrapper(),
     });
 
-    await result.current.logout();
+    await act(async () => {
+      await result.current.logout();
+    });
     await waitFor(() =>
       expect(useAuthStore.getState().isAuthenticated).toBe(false),
     );
