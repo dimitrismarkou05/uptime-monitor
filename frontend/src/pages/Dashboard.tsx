@@ -1,17 +1,8 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import apiClient from "../api/client";
 
 export default function Dashboard() {
-  const { user, isAuthenticated, logout } = useAuthStore();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, navigate]);
+  const { user, logout } = useAuthStore();
 
   const handleCreateMonitor = async () => {
     try {

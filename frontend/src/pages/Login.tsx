@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn, signUp } from "../api/auth";
+import { syncUser } from "../api/users";
 import { useAuthStore } from "../stores/authStore";
 
 export default function Login() {
@@ -18,8 +19,11 @@ export default function Login() {
       const user = isSignUp
         ? await signUp(email, password)
         : await signIn(email, password);
+
       if (user) {
-        setUser({ id: user.id, email: user.email! });
+        // Sync with backend DB immediately after login
+        const syncedUser = await syncUser();
+        setUser({ id: syncedUser.id, email: syncedUser.email });
         navigate("/dashboard");
       }
     } catch (err: unknown) {
