@@ -14,6 +14,10 @@ from app.core.rate_limiter import limiter
 from app.core.config import settings
 from app.api.deps import get_db
 
+from app.core.logging import setup_logging
+
+setup_logging()
+
 app = FastAPI(
     title="Uptime Monitor API",
     description="URL uptime monitoring and alerting system",

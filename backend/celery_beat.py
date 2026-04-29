@@ -1,6 +1,10 @@
 from celery_worker import celery_app
 from celery.schedules import crontab
 
+from app.core.logging import setup_logging
+
+setup_logging()
+
 celery_app.conf.beat_schedule = {
     "dispatch-due-monitors": {
         "task": "app.tasks.scheduler.dispatch_checks",
