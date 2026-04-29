@@ -26,6 +26,11 @@ class TestCeleryTasks:
             mock_db.__enter__.return_value = mock_db
             mock_session.return_value = mock_db
 
+            # Mock monitor with interval_seconds required by update_next_check_sync
+            mock_monitor = MagicMock()
+            mock_monitor.interval_seconds = 300
+            mock_db.get.return_value = mock_monitor
+
             result = ping_url.run(str(uuid4()), "https://example.com")
 
             assert result["is_up"] is True

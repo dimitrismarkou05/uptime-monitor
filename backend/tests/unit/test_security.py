@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
+from uuid import uuid4
 
 from app.core.security import verify_token
 
@@ -8,10 +9,10 @@ from app.core.security import verify_token
 class TestVerifyToken:
     @pytest.mark.asyncio
     async def test_valid_token(self):
+        valid_uuid = str(uuid4())
         mock_user = Mock()
-        mock_user.id = "123e4567-e89b-12d3-a456-426614174000"
+        mock_user.id = valid_uuid
         mock_user.email = "test@example.com"
-        mock_user.id = "supabase-uid-123"  # reused for supabase_uid
 
         mock_response = Mock()
         mock_response.user = mock_user
@@ -24,7 +25,8 @@ class TestVerifyToken:
             result = await verify_token("valid-token")
             
             assert result["email"] == "test@example.com"
-            assert result["supabase_uid"] == "supabase-uid-123"
+            assert result["supabase_uid"] == valid_uuid
+            assert str(result["id"]) == valid_uuid  # verify UUID coercion worked
 
     @pytest.mark.asyncio
     async def test_invalid_token(self):

@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +9,7 @@ from app.schemas.user import UserRead
 from app.core.security import get_supabase_admin
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 async def _get_or_create_user(
     current_user: dict,
@@ -57,15 +59,15 @@ async def delete_current_user(
     """Delete user from local database and Supabase Auth."""
     user = await _get_or_create_user(current_user, db)
     
-    # 1. Delete from Supabase Auth using the admin client
+    # 1. Delete local user first (SQLAlchemy cascades delete to monitors & ping logs)
+    await db.delete(user)
+    await db.commit()
+
+    # 2. Best-effort Supabase Auth cleanup
     supabase = get_supabase_admin()
     try:
         supabase.auth.admin.delete_user(current_user["supabase_uid"])
     except Exception as e:
-        # Log this in a real system, but proceed to clear local data regardless
-        print(f"Failed to delete Supabase auth user: {e}")
+        logger.error(f"Failed to delete Supabase auth user: {e}", exc_info=True)
 
-    # 2. Delete local user (SQLAlchemy cascades delete to monitors & ping logs)
-    await db.delete(user)
-    await db.commit()
     return None

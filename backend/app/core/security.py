@@ -1,4 +1,5 @@
 import asyncio
+from uuid import UUID
 from fastapi import HTTPException, status
 from supabase import create_client
 
@@ -21,7 +22,7 @@ async def verify_token(token: str) -> dict:
         if response.user is None:
             raise ValueError("Invalid user")
         return {
-            "id": response.user.id,
+            "id": UUID(response.user.id),          # ← coerce to UUID
             "email": response.user.email,
             "supabase_uid": response.user.id,
         }

@@ -52,14 +52,17 @@ async def health_check(request: Request, db=Depends(get_db)):
         health["services"]["database"] = f"error: {e}"
         health["status"] = "degraded"
 
+    r = None
     try:
         r = aioredis.from_url(settings.redis_url)
         await r.ping()
-        await r.close()
         health["services"]["redis"] = "ok"
     except Exception as e:
         health["services"]["redis"] = f"error: {e}"
         health["status"] = "degraded"
+    finally:
+        if r:
+            await r.close()
 
     status_code = 200 if health["status"] == "ok" else 503
     return JSONResponse(content=health, status_code=status_code)
