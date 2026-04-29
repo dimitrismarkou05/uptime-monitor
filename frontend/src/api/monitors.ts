@@ -5,8 +5,13 @@ import type {
   MonitorUpdate,
 } from "../types/monitor";
 
-export async function getMonitors(): Promise<MonitorRead[]> {
-  const { data } = await apiClient.get("/monitors/");
+export async function getMonitors(
+  skip: number = 0,
+  limit: number = 100,
+): Promise<MonitorRead[]> {
+  const { data } = await apiClient.get(
+    `/monitors/?skip=${skip}&limit=${limit}`,
+  );
   return data;
 }
 

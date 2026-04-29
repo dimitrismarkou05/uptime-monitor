@@ -10,3 +10,7 @@ export async function getMe(): Promise<UserRead> {
   const { data } = await apiClient.get("/users/me");
   return data;
 }
+
+export async function deleteAccount(): Promise<void> {
+  await apiClient.delete("/users/me");
+}

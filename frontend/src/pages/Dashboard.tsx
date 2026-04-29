@@ -16,18 +16,24 @@ import type {
 } from "../types/monitor";
 import { useMonitorStore } from "../stores/monitorStore";
 
+const PAGE_SIZE = 10;
+
 export default function Dashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingMonitor, setEditingMonitor] = useState<MonitorRead | null>(
     null,
   );
+  const [page, setPage] = useState(0);
 
-  const { data: monitors, isLoading, error } = useMonitors();
+  const {
+    data: monitors,
+    isLoading,
+    error,
+  } = useMonitors(page * PAGE_SIZE, PAGE_SIZE);
   const createMonitor = useCreateMonitor();
   const updateMonitor = useUpdateMonitor();
   const deleteMonitor = useDeleteMonitor();
 
-  // 1. Pull the filter state from the store
   const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } =
     useMonitorStore();
 
@@ -49,12 +55,8 @@ export default function Dashboard() {
     await deleteMonitor.mutateAsync(id);
   };
 
-  // Calculate counts for use in the summary UI
-  const upCount = monitors?.filter((m) => m.alert_status === "UP").length ?? 0;
-  const downCount =
-    monitors?.filter((m) => m.alert_status === "DOWN").length ?? 0;
-
-  // 2. Filter the monitors based on the store state
+  // We filter the current page locally. (For massive datasets, this logic
+  // should ideally be moved to backend queries, but this handles the visual state).
   const filteredMonitors = monitors?.filter((m) => {
     const matchesSearch = m.url
       .toLowerCase()
@@ -64,6 +66,10 @@ export default function Dashboard() {
     return matchesSearch && matchesStatus;
   });
 
+  const upCount = monitors?.filter((m) => m.alert_status === "UP").length ?? 0;
+  const downCount =
+    monitors?.filter((m) => m.alert_status === "DOWN").length ?? 0;
+
   return (
     <DashboardShell>
       <div className="space-y-6">
@@ -71,10 +77,6 @@ export default function Dashboard() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Monitors</h1>
             <div className="flex items-center gap-3 mt-1">
-              <p className="text-sm text-gray-600">
-                {monitors?.length ?? 0} total
-              </p>
-              <span className="text-gray-300">|</span>
               <span className="text-sm font-medium text-green-600">
                 {upCount} UP
               </span>
@@ -125,13 +127,11 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isLoading && (
+        {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           </div>
-        )}
-
-        {monitors && (
+        ) : (
           <>
             <div className="flex gap-4 mb-4">
               <input
@@ -143,7 +143,6 @@ export default function Dashboard() {
               />
               <select
                 value={statusFilter}
-                // Cast to the specific union type instead of 'any'
                 onChange={(e) =>
                   setStatusFilter(e.target.value as "ALL" | "UP" | "DOWN")
                 }
@@ -161,6 +160,25 @@ export default function Dashboard() {
               onToggle={handleToggle}
               onEdit={(m) => setEditingMonitor(m)}
             />
+
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mt-4">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-500">Page {page + 1}</span>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!monitors || monitors.length < PAGE_SIZE}
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
           </>
         )}
       </div>

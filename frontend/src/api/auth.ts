@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function signIn(email: string, password: string) {
@@ -16,10 +15,7 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
   return data.user;
 }
@@ -27,6 +23,26 @@ export async function signUp(email: string, password: string) {
 export async function signOut() {
   await supabase.auth.signOut();
   localStorage.removeItem("access_token");
+}
+
+export async function updateEmail(email: string) {
+  const { data, error } = await supabase.auth.updateUser({ email });
+  if (error) throw error;
+  return data;
+}
+
+export async function updatePassword(password: string) {
+  const { data, error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+  return data;
+}
+
+export async function requestPasswordReset(email: string) {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/settings`,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export function getToken() {

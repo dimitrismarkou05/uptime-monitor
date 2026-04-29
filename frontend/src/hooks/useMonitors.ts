@@ -10,10 +10,10 @@ import type { MonitorUpdate } from "../types/monitor";
 
 const MONITORS_KEY = "monitors";
 
-export function useMonitors() {
+export function useMonitors(skip: number = 0, limit: number = 100) {
   return useQuery({
-    queryKey: [MONITORS_KEY],
-    queryFn: getMonitors,
+    queryKey: [MONITORS_KEY, skip, limit],
+    queryFn: () => getMonitors(skip, limit),
   });
 }
 
