@@ -4,6 +4,12 @@ export interface MonitorCreate {
   is_active: boolean;
 }
 
+export interface MonitorUpdate {
+  url?: string;
+  interval_seconds?: number;
+  is_active?: boolean;
+}
+
 export interface MonitorRead {
   id: string;
   user_id: string;

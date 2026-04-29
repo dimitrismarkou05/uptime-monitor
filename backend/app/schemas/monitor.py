@@ -11,7 +11,13 @@ class MonitorBase(BaseModel):
 
 
 class MonitorCreate(MonitorBase):
-    pass  # user_id comes from JWT token
+    pass
+
+
+class MonitorUpdate(BaseModel):
+    url: HttpUrl | None = None
+    interval_seconds: int | None = Field(default=None, ge=60, le=86400)
+    is_active: bool | None = None
 
 
 class MonitorRead(MonitorBase):
