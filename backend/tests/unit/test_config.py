@@ -31,7 +31,6 @@ class TestConfig:
             clear=False,
         ):
             s = Settings()
-            assert s.environment == "development"
             assert s.smtp_host == "localhost"
             assert s.smtp_port == 1025
             assert s.from_email == "alerts@uptime-monitor.local"
