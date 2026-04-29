@@ -196,7 +196,7 @@ jobs:
 
       - name: Run Playwright E2E tests
         working-directory: ./frontend
-        run: npx playwright test
+        run: npx playwright test --reporter=list,html
 
       - name: Upload Playwright report artifact
         uses: actions/upload-artifact@v4
