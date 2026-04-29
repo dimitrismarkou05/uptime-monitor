@@ -1,14 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useAuth } from "./useAuth";
-import * as authApi from "../api/auth";
-import * as usersApi from "../api/users";
-import { useAuthStore } from "../stores/authStore";
 import type { ReactNode } from "react";
 
-vi.mock("../api/auth");
-vi.mock("../api/users");
+vi.mock("../api/auth", () => ({
+  signIn: vi.fn(),
+  signUp: vi.fn(),
+  signOut: vi.fn(),
+}));
+
+vi.mock("../api/users", () => ({
+  syncUser: vi.fn(),
+}));
+
+import { useAuth } from "./useAuth";
+import { useAuthStore } from "../stores/authStore";
+import * as authApi from "../api/auth";
+import * as usersApi from "../api/users";
 
 const createWrapper = () => {
   const client = new QueryClient({

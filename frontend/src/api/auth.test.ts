@@ -18,11 +18,11 @@ const mockResetPassword = vi.fn();
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(() => ({
     auth: {
-      signInWithPassword: mockSignIn,
-      signUp: mockSignUp,
-      signOut: mockSignOut,
-      updateUser: mockUpdateUser,
-      resetPasswordForEmail: mockResetPassword,
+      signInWithPassword: (...args: unknown[]) => mockSignIn(...args),
+      signUp: (...args: unknown[]) => mockSignUp(...args),
+      signOut: (...args: unknown[]) => mockSignOut(...args),
+      updateUser: (...args: unknown[]) => mockUpdateUser(...args),
+      resetPasswordForEmail: (...args: unknown[]) => mockResetPassword(...args),
     },
   })),
 }));

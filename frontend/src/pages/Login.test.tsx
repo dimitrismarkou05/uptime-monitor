@@ -2,8 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import Login from "./Login";
 import { useAuth } from "../hooks/useAuth";
+import Login from "./Login";
 
 vi.mock("../hooks/useAuth");
 

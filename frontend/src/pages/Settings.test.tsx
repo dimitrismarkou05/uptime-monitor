@@ -2,13 +2,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
 import Settings from "./Settings";
+
+vi.mock("../api/auth", () => ({
+  updateEmail: vi.fn(),
+  updatePassword: vi.fn(),
+  requestPasswordReset: vi.fn(),
+}));
+
+vi.mock("../api/users", () => ({
+  deleteAccount: vi.fn(),
+}));
+
 import * as authApi from "../api/auth";
 import * as usersApi from "../api/users";
-import { useAuthStore } from "../stores/authStore";
-
-vi.mock("../api/auth");
-vi.mock("../api/users");
 
 describe("Settings", () => {
   beforeEach(() => {

@@ -90,7 +90,12 @@ describe("MonitorList", () => {
         />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getAllByRole("button")[0]);
+    // The toggle is the first rounded-full button in the Active column
+    const toggleButton = screen
+      .getAllByRole("button")
+      .find((b) => b.className.includes("rounded-full"));
+    expect(toggleButton).toBeDefined();
+    fireEvent.click(toggleButton!);
     expect(onToggle).toHaveBeenCalledWith("1", false);
   });
 });

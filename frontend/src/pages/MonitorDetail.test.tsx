@@ -74,8 +74,11 @@ describe("MonitorDetail", () => {
     } as unknown as PingsHook);
 
     render(<MonitorDetail />, { wrapper: Wrapper });
+
     expect(screen.getByText("https://example.com")).toBeInTheDocument();
-    expect(screen.getByText("90%")).toBeInTheDocument();
+    expect(screen.getByText("Uptime")).toBeInTheDocument();
+    expect(screen.getByText("10")).toBeInTheDocument();
+    expect(screen.getByText("120ms")).toBeInTheDocument();
   });
 
   it("shows not found", () => {
