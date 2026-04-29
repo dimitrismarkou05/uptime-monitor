@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useMonitor } from "../hooks/useMonitors";
 import { useMonitorStats, useMonitorPings } from "../hooks/usePings";
+import { formatPercentage, formatDateTime } from "../utils/formatters";
 import DashboardShell from "../components/layout/DashboardShell";
 import StatusIndicator from "../components/monitors/StatusIndicator";
 import UptimeChart from "../components/monitors/UptimeChart";
@@ -57,7 +58,10 @@ export default function MonitorDetail() {
         {/* Stats Grid */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Uptime" value={`${stats.uptime_percent}%`} />
+            <StatCard
+              label="Uptime"
+              value={formatPercentage(stats.uptime_percent)}
+            />
             <StatCard label="Checks" value={String(stats.total_checks)} />
             <StatCard
               label="Avg Response"
@@ -67,7 +71,7 @@ export default function MonitorDetail() {
             />
             <StatCard
               label="24h Uptime"
-              value={`${stats.last_24h.uptime_percent}%`}
+              value={formatPercentage(stats.last_24h.uptime_percent)}
             />
           </div>
         )}
@@ -96,7 +100,7 @@ export default function MonitorDetail() {
                     className={`w-2 h-2 rounded-full ${ping.is_up ? "bg-emerald-400" : "bg-red-400"}`}
                   />
                   <span className="text-sm text-gray-600">
-                    {new Date(ping.timestamp).toLocaleString()}
+                    {formatDateTime(ping.timestamp)}
                   </span>
                 </div>
                 <div className="text-sm text-gray-500">

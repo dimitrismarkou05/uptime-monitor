@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StatusIndicator from "./StatusIndicator";
 import type { MonitorRead } from "../../types/monitor";
+import { formatInterval } from "../../utils/formatters";
 
 interface MonitorListProps {
   monitors: MonitorRead[];
@@ -67,9 +68,7 @@ export default function MonitorList({
                 </button>
               </td>
               <td className="px-4 py-3 text-gray-600">
-                {monitor.interval_seconds >= 60
-                  ? `${Math.floor(monitor.interval_seconds / 60)}m`
-                  : `${monitor.interval_seconds}s`}
+                {formatInterval(monitor.interval_seconds)}
               </td>
               <td className="px-4 py-3">
                 <button

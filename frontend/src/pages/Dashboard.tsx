@@ -14,6 +14,7 @@ import type {
   MonitorUpdate,
   MonitorRead,
 } from "../types/monitor";
+import { useMonitorStore } from "../stores/monitorStore";
 
 export default function Dashboard() {
   const [showForm, setShowForm] = useState(false);
@@ -25,6 +26,10 @@ export default function Dashboard() {
   const createMonitor = useCreateMonitor();
   const updateMonitor = useUpdateMonitor();
   const deleteMonitor = useDeleteMonitor();
+
+  // 1. Pull the filter state from the store
+  const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } =
+    useMonitorStore();
 
   const handleCreate = async (data: MonitorCreate) => {
     await createMonitor.mutateAsync(data);
@@ -44,9 +49,20 @@ export default function Dashboard() {
     await deleteMonitor.mutateAsync(id);
   };
 
+  // Calculate counts for use in the summary UI
   const upCount = monitors?.filter((m) => m.alert_status === "UP").length ?? 0;
   const downCount =
     monitors?.filter((m) => m.alert_status === "DOWN").length ?? 0;
+
+  // 2. Filter the monitors based on the store state
+  const filteredMonitors = monitors?.filter((m) => {
+    const matchesSearch = m.url
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesStatus =
+      statusFilter === "ALL" || m.alert_status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <DashboardShell>
@@ -54,10 +70,18 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Monitors</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {monitors?.length ?? 0} active monitor
-              {monitors?.length !== 1 ? "s" : ""}
-            </p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-sm text-gray-600">
+                {monitors?.length ?? 0} total
+              </p>
+              <span className="text-gray-300">|</span>
+              <span className="text-sm font-medium text-green-600">
+                {upCount} UP
+              </span>
+              <span className="text-sm font-medium text-red-600">
+                {downCount} DOWN
+              </span>
+            </div>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -109,25 +133,30 @@ export default function Dashboard() {
 
         {monitors && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {monitors.length}
-                </p>
-              </div>
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <p className="text-sm text-gray-500">Up</p>
-                <p className="text-2xl font-bold text-emerald-600">{upCount}</p>
-              </div>
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <p className="text-sm text-gray-500">Down</p>
-                <p className="text-2xl font-bold text-red-600">{downCount}</p>
-              </div>
+            <div className="flex gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Search URLs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm w-64 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <select
+                value={statusFilter}
+                // Cast to the specific union type instead of 'any'
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as "ALL" | "UP" | "DOWN")
+                }
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="UP">Up Only</option>
+                <option value="DOWN">Down Only</option>
+              </select>
             </div>
 
             <MonitorList
-              monitors={monitors}
+              monitors={filteredMonitors || []}
               onDelete={handleDelete}
               onToggle={handleToggle}
               onEdit={(m) => setEditingMonitor(m)}

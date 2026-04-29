@@ -1,4 +1,5 @@
 import { useAuthStore } from "../../stores/authStore";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
@@ -12,6 +13,12 @@ export default function Navbar() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">{user?.email}</span>
+          <Link
+            to="/settings"
+            className="text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
+            Settings
+          </Link>
           <button
             onClick={logout}
             className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
