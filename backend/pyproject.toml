@@ -85,4 +85,4 @@ target-version = ["py311"]
 # Coverage reporting
 [tool.coverage.run]
 source = ["app"]
-omit = ["*/tests/*", "*/alembic/*"]
+omit = ["*/tests/*", "*/alembic/*", "*/__init__.py"]
