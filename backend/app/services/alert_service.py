@@ -1,4 +1,5 @@
 import smtplib
+import logging
 from email.mime.text import MIMEText
 from datetime import datetime, timezone
 from typing import Optional
@@ -7,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.monitor import Monitor
-from app.models.ping_log import PingLog
 
+logger = logging.getLogger(__name__)
 
 class AlertService:
     """Handles alert state transitions and email dispatching."""
@@ -62,8 +63,8 @@ class AlertService:
                 server.send_message(msg)
             return True
         except Exception as e:
-            # Log but don't raise — we don't want email failures to break pings
-            print(f"[AlertService] Failed to send email: {e}")
+            # Log structured error instead of a silent print
+            logger.error(f"[AlertService] Failed to send email for monitor {monitor_id}: {e}", exc_info=True)
             return False
 
     def get_recipient(self, monitor: Monitor) -> str:
@@ -117,7 +118,6 @@ class AlertService:
         else:
             self.db.commit()
             return None
-
 
 def send_alert_email(monitor_id: str, url: str, recipient: str, status: str) -> bool:
     """

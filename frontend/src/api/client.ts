@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "../stores/authStore";
 
 const apiClient = axios.create({
   baseURL: "http://localhost:8000/api/v1",
@@ -19,8 +20,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("access_token");
-      window.location.href = "/login";
+      // Graceful state wipe triggering React Router redirect instead of a hard DOM reload
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   },
