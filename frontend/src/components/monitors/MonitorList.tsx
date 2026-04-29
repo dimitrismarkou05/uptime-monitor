@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import StatusIndicator from "./StatusIndicator";
 import type { MonitorRead } from "../../types/monitor";
 
@@ -58,7 +57,7 @@ export default function MonitorList({
                   href={monitor.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline truncate max-w-[200px] inline-block"
+                  className="text-blue-600 hover:underline truncate max-w-50 inline-block"
                 >
                   {monitor.url}
                 </a>

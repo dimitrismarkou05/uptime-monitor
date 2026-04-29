@@ -32,11 +32,7 @@ export default function Dashboard() {
   };
 
   // Aggregate all ping logs for a simple overview chart
-  const allPings =
-    monitors?.flatMap((m) =>
-      // Placeholder — we'll wire real ping data later
-      [],
-    ) ?? [];
+  const allPings = monitors?.flatMap(() => []) ?? [];
 
   return (
     <DashboardShell>

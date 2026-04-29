@@ -6,7 +6,7 @@ import {
   updateMonitor,
   deleteMonitor,
 } from "../api/monitors";
-import type { MonitorCreate, MonitorUpdate } from "../types/monitor";
+import type { MonitorUpdate } from "../types/monitor";
 
 const MONITORS_KEY = "monitors";
 

@@ -29,7 +29,7 @@ export default function UptimeChart({ data }: UptimeChartProps) {
         {recentChecks.map((check, i) => (
           <div
             key={i}
-            className={`flex-1 rounded-sm min-w-[4px] ${
+            className={`flex-1 rounded-sm min-w-1 ${
               check.is_up ? "bg-emerald-400" : "bg-red-400"
             }`}
             style={{ height: "100%" }}
