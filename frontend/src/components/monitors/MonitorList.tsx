@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import StatusIndicator from "./StatusIndicator";
 import type { MonitorRead } from "../../types/monitor";
 
@@ -21,6 +22,8 @@ export default function MonitorList({
     await onDelete(id);
     setDeletingId(null);
   };
+
+  const navigate = useNavigate();
 
   if (monitors.length === 0) {
     return (
@@ -53,14 +56,12 @@ export default function MonitorList({
                 <StatusIndicator status={monitor.alert_status} />
               </td>
               <td className="px-4 py-3">
-                <a
-                  href={monitor.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline truncate max-w-50 inline-block"
+                <button
+                  onClick={() => navigate(`/monitor/${monitor.id}`)}
+                  className="text-blue-600 hover:underline text-left truncate max-w-50"
                 >
                   {monitor.url}
-                </a>
+                </button>
               </td>
               <td className="px-4 py-3 text-gray-600">
                 {monitor.interval_seconds >= 60

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import MonitorDetail from "./pages/MonitorDetail";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -13,6 +14,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/monitor/:id"
+          element={
+            <ProtectedRoute>
+              <MonitorDetail />
             </ProtectedRoute>
           }
         />

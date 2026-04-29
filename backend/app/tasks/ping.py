@@ -9,6 +9,8 @@ from app.models.ping_log import PingLog
 from app.models.monitor import Monitor
 from app.tasks.alerts import send_alert_email
 
+from app.services.alert_service import send_alert_email
+
 
 @celery_app.task(bind=True, max_retries=3)
 def ping_url(self, monitor_id: str, url: str):
@@ -48,10 +50,14 @@ def ping_url(self, monitor_id: str, url: str):
                 monitor.alert_status = "DOWN"
                 monitor.last_alerted_at = datetime.now(timezone.utc)
                 db.commit()
-                send_alert_email.delay(monitor_id, url)
+                # Get user email from relationship
+                user_email = monitor.user.email if monitor.user else "admin@example.com"
+                send_alert_email.delay(str(monitor.id), str(monitor.url), user_email, "DOWN")
             elif is_up and monitor.alert_status == "DOWN":
                 monitor.alert_status = "UP"
                 db.commit()
+                user_email = monitor.user.email if monitor.user else "admin@example.com"
+                send_alert_email.delay(str(monitor.id), str(monitor.url), user_email, "UP")
             else:
                 db.commit()
         else:
