@@ -187,9 +187,9 @@ jobs:
       - name: Start frontend preview server
         working-directory: ./frontend
         run: |
-          npm run preview &
+          npx vite preview --port 5173 --host 0.0.0.0 &
           echo "FE_PID=$!" >> $GITHUB_ENV
-          sleep 5
+          npx wait-on http://localhost:5173 --timeout 30000
 
       - name: Run Playwright E2E tests
         working-directory: ./frontend
