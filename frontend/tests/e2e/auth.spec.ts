@@ -8,25 +8,24 @@ test.describe("Authentication", () => {
 
   test("shows login form", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Sign in to your account/i }),
+    ).toBeVisible();
     await expect(page.locator("#email")).toBeVisible();
     await expect(page.locator("#password")).toBeVisible();
   });
 
   test("toggles between sign in and sign up", async ({ page }) => {
     await page.goto("/login");
-
-    await page
-      .getByRole("button", { name: "Need an account? Sign up" })
-      .click();
+    await page.getByRole("button", { name: "Sign up" }).click();
     await expect(
-      page.getByRole("heading", { name: "Create Account" }),
+      page.getByRole("heading", { name: /Create your account/i }),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Sign in" }).click();
 
-    await page
-      .getByRole("button", { name: "Already have an account? Sign in" })
-      .click();
-    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Sign in to your account/i }),
+    ).toBeVisible();
   });
 
   test("shows error on invalid credentials", async ({ page }) => {
@@ -36,6 +35,8 @@ test.describe("Authentication", () => {
     await page.locator("#password").fill("wrongpassword");
     await page.getByRole("button", { name: "Sign In" }).click();
 
-    await expect(page.getByText(/invalid|error/i)).toBeVisible();
+    await expect(
+      page.getByText(/Authentication failed|invalid|error/i),
+    ).toBeVisible();
   });
 });

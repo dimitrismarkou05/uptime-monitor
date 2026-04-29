@@ -62,7 +62,7 @@ test("shows aggregate stats on dashboard", async ({ page }) => {
   });
   await page.goto("/dashboard");
 
-  await expect(page.getByText("3", { exact: true }).first()).toBeVisible(); // Total
-  await expect(page.getByText("2", { exact: true })).toBeVisible(); // Up
-  await expect(page.getByText("1", { exact: true })).toBeVisible(); // Down
+  await expect(page.getByText(/3\s*total/i)).toBeVisible(); // Total
+  await expect(page.getByText(/2\s*UP/i)).toBeVisible(); // Up
+  await expect(page.getByText(/1\s*DOWN/i)).toBeVisible(); // Down
 });
