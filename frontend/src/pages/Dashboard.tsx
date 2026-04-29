@@ -2,17 +2,25 @@ import { useState } from "react";
 import DashboardShell from "../components/layout/DashboardShell";
 import MonitorList from "../components/monitors/MonitorList";
 import MonitorForm from "../components/monitors/MonitorForm";
-import UptimeChart from "../components/monitors/UptimeChart";
+import EditMonitorModal from "../components/monitors/EditMonitorModal";
 import {
   useMonitors,
   useCreateMonitor,
   useUpdateMonitor,
   useDeleteMonitor,
 } from "../hooks/useMonitors";
-import type { MonitorCreate } from "../types/monitor";
+import type {
+  MonitorCreate,
+  MonitorUpdate,
+  MonitorRead,
+} from "../types/monitor";
 
 export default function Dashboard() {
   const [showForm, setShowForm] = useState(false);
+  const [editingMonitor, setEditingMonitor] = useState<MonitorRead | null>(
+    null,
+  );
+
   const { data: monitors, isLoading, error } = useMonitors();
   const createMonitor = useCreateMonitor();
   const updateMonitor = useUpdateMonitor();
@@ -23,6 +31,11 @@ export default function Dashboard() {
     setShowForm(false);
   };
 
+  const handleEdit = (id: string, data: MonitorUpdate) => {
+    updateMonitor.mutate({ id, data });
+    setEditingMonitor(null);
+  };
+
   const handleToggle = (id: string, isActive: boolean) => {
     updateMonitor.mutate({ id, data: { is_active: isActive } });
   };
@@ -31,13 +44,13 @@ export default function Dashboard() {
     await deleteMonitor.mutateAsync(id);
   };
 
-  // Aggregate all ping logs for a simple overview chart
-  const allPings = monitors?.flatMap(() => []) ?? [];
+  const upCount = monitors?.filter((m) => m.alert_status === "UP").length ?? 0;
+  const downCount =
+    monitors?.filter((m) => m.alert_status === "DOWN").length ?? 0;
 
   return (
     <DashboardShell>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Monitors</h1>
@@ -54,7 +67,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Create Form Modal */}
         {showForm && (
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -68,7 +80,15 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Error State */}
+        {editingMonitor && (
+          <EditMonitorModal
+            monitor={editingMonitor}
+            onSave={handleEdit}
+            onClose={() => setEditingMonitor(null)}
+            isLoading={updateMonitor.isPending}
+          />
+        )}
+
         {error && (
           <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
             Failed to load monitors.{" "}
@@ -81,29 +101,39 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           </div>
         )}
 
-        {/* Monitor List */}
         {monitors && (
-          <MonitorList
-            monitors={monitors}
-            onDelete={handleDelete}
-            onToggle={handleToggle}
-          />
-        )}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <p className="text-sm text-gray-500">Total</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {monitors.length}
+                </p>
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <p className="text-sm text-gray-500">Up</p>
+                <p className="text-2xl font-bold text-emerald-600">{upCount}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <p className="text-sm text-gray-500">Down</p>
+                <p className="text-2xl font-bold text-red-600">{downCount}</p>
+              </div>
+            </div>
 
-        {/* Overview Chart */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Uptime Overview
-          </h2>
-          <UptimeChart data={allPings} />
-        </div>
+            <MonitorList
+              monitors={monitors}
+              onDelete={handleDelete}
+              onToggle={handleToggle}
+              onEdit={(m) => setEditingMonitor(m)}
+            />
+          </>
+        )}
       </div>
     </DashboardShell>
   );

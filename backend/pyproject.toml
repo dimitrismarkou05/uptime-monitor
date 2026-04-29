@@ -35,6 +35,9 @@ dependencies = [
     
     # Supabase client (optional but useful for auth helpers)
     "supabase>=2.4.0",
+
+    "slowapi>=0.1.9",
+    "limits[redis]>=3.8.0",
 ]
 
 [project.optional-dependencies]

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_user
+from app.core.rate_limiter import limiter
 from app.models.ping_log import PingLog
 from app.models.monitor import Monitor
 from app.schemas.ping_log import PingLogRead
@@ -11,13 +12,14 @@ router = APIRouter()
 
 
 @router.get("/monitor/{monitor_id}", response_model=list[PingLogRead])
+@limiter.limit("60/minute")
 async def get_monitor_pings(
+    request: Request,
     monitor_id: str,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    # Verify monitor belongs to user
     result = await db.execute(
         select(Monitor).where(
             Monitor.id == monitor_id,
@@ -38,7 +40,9 @@ async def get_monitor_pings(
 
 
 @router.get("/monitor/{monitor_id}/stats")
+@limiter.limit("60/minute")
 async def get_monitor_stats(
+    request: Request,
     monitor_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -53,12 +57,10 @@ async def get_monitor_stats(
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
 
-    # Total pings
     total = await db.scalar(
         select(func.count()).where(PingLog.monitor_id == monitor_id)
     )
-    
-    # Uptime count
+
     uptime = await db.scalar(
         select(func.count()).where(
             PingLog.monitor_id == monitor_id,
@@ -66,7 +68,6 @@ async def get_monitor_stats(
         )
     )
 
-    # Average response time
     avg_response = await db.scalar(
         select(func.avg(PingLog.response_ms)).where(
             PingLog.monitor_id == monitor_id,
@@ -74,17 +75,16 @@ async def get_monitor_stats(
         )
     )
 
-    # Last 24h uptime
     from datetime import datetime, timezone, timedelta
     day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
-    
+
     day_total = await db.scalar(
         select(func.count()).where(
             PingLog.monitor_id == monitor_id,
             PingLog.timestamp >= day_ago,
         )
     )
-    
+
     day_uptime = await db.scalar(
         select(func.count()).where(
             PingLog.monitor_id == monitor_id,

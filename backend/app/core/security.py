@@ -1,6 +1,6 @@
+import asyncio
 from fastapi import HTTPException, status
 from supabase import create_client
-from jose import jwt, JWTError
 
 from app.core.config import settings
 
@@ -14,11 +14,10 @@ def get_supabase_admin():
 
 
 async def verify_token(token: str) -> dict:
-    """Verify a Supabase JWT."""
+    """Verify a Supabase JWT without blocking the event loop."""
     supabase = get_supabase_admin()
     try:
-        # use auth.get_user with the Bearer token
-        response = supabase.auth.get_user(token)
+        response = await asyncio.to_thread(supabase.auth.get_user, token)
         if response.user is None:
             raise ValueError("Invalid user")
         return {

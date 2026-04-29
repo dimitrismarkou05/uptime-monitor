@@ -1,101 +1,82 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_user
-from app.models.monitor import Monitor
+from app.core.rate_limiter import limiter
 from app.schemas.monitor import MonitorCreate, MonitorRead, MonitorUpdate
+from app.services.monitor_service import MonitorService
 
 router = APIRouter()
 
 
 @router.post("/", response_model=MonitorRead, status_code=201)
+@limiter.limit("10/minute")
 async def create_monitor(
+    request: Request,
     monitor_in: MonitorCreate,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    monitor_data = monitor_in.model_dump(mode="json")
-    monitor_data["user_id"] = current_user["id"]
-    
-    monitor = Monitor(**monitor_data)
-    db.add(monitor)
-    await db.commit()
-    await db.refresh(monitor)
+    service = MonitorService(db)
+    monitor = await service.create(current_user["id"], monitor_in)
     return monitor
 
 
 @router.get("/", response_model=list[MonitorRead])
+@limiter.limit("60/minute")
 async def list_monitors(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = Query(100, ge=1, le=500),
 ):
-    result = await db.execute(
-        select(Monitor).where(Monitor.user_id == current_user["id"])
-    )
-    return result.scalars().all()
+    service = MonitorService(db)
+    return await service.list_by_user(current_user["id"], skip, limit)
 
 
 @router.get("/{monitor_id}", response_model=MonitorRead)
+@limiter.limit("60/minute")
 async def get_monitor(
+    request: Request,
     monitor_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Monitor).where(
-            Monitor.id == monitor_id,
-            Monitor.user_id == current_user["id"],
-        )
-    )
-    monitor = result.scalar_one_or_none()
+    service = MonitorService(db)
+    monitor = await service.get_by_id(monitor_id, current_user["id"])
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
     return monitor
 
 
 @router.patch("/{monitor_id}", response_model=MonitorRead)
+@limiter.limit("20/minute")
 async def update_monitor(
+    request: Request,
     monitor_id: str,
     monitor_in: MonitorUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Monitor).where(
-            Monitor.id == monitor_id,
-            Monitor.user_id == current_user["id"],
-        )
-    )
-    monitor = result.scalar_one_or_none()
+    service = MonitorService(db)
+    monitor = await service.get_by_id(monitor_id, current_user["id"])
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
-    
-    update_data = monitor_in.model_dump(exclude_unset=True, mode="json")
-    for field, value in update_data.items():
-        setattr(monitor, field, value)
-    
-    await db.commit()
-    await db.refresh(monitor)
-    return monitor
+    return await service.update(monitor, monitor_in)
 
 
 @router.delete("/{monitor_id}", status_code=204)
+@limiter.limit("20/minute")
 async def delete_monitor(
+    request: Request,
     monitor_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Monitor).where(
-            Monitor.id == monitor_id,
-            Monitor.user_id == current_user["id"],
-        )
-    )
-    monitor = result.scalar_one_or_none()
+    service = MonitorService(db)
+    monitor = await service.get_by_id(monitor_id, current_user["id"])
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
-    
-    await db.delete(monitor)
-    await db.commit()
+    await service.delete(monitor)
     return None

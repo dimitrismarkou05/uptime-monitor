@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime, Text, func
+from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime, Text, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -10,9 +10,13 @@ from app.db.base import Base
 class PingLog(Base):
     __tablename__ = "ping_logs"
 
+    __table_args__ = (
+        Index("ix_ping_logs_monitor_id_timestamp", "monitor_id", "timestamp"),
+    )
+
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     monitor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("monitors.id"), nullable=False)
-    
+
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

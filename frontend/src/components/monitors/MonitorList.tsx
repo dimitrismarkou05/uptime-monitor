@@ -7,14 +7,17 @@ interface MonitorListProps {
   monitors: MonitorRead[];
   onDelete: (id: string) => void;
   onToggle: (id: string, isActive: boolean) => void;
+  onEdit: (monitor: MonitorRead) => void;
 }
 
 export default function MonitorList({
   monitors,
   onDelete,
   onToggle,
+  onEdit,
 }: MonitorListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this monitor?")) return;
@@ -22,8 +25,6 @@ export default function MonitorList({
     await onDelete(id);
     setDeletingId(null);
   };
-
-  const navigate = useNavigate();
 
   if (monitors.length === 0) {
     return (
@@ -53,7 +54,9 @@ export default function MonitorList({
           {monitors.map((monitor) => (
             <tr key={monitor.id} className="hover:bg-gray-50">
               <td className="px-4 py-3">
-                <StatusIndicator status={monitor.alert_status} />
+                <StatusIndicator
+                  status={monitor.alert_status as "UP" | "DOWN"}
+                />
               </td>
               <td className="px-4 py-3">
                 <button
@@ -83,13 +86,21 @@ export default function MonitorList({
                 </button>
               </td>
               <td className="px-4 py-3 text-right">
-                <button
-                  onClick={() => handleDelete(monitor.id)}
-                  disabled={deletingId === monitor.id}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
-                >
-                  {deletingId === monitor.id ? "Deleting..." : "Delete"}
-                </button>
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => onEdit(monitor)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(monitor.id)}
+                    disabled={deletingId === monitor.id}
+                    className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
+                  >
+                    {deletingId === monitor.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

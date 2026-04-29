@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime, func
+from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -10,17 +10,22 @@ from app.db.base import Base
 class Monitor(Base):
     __tablename__ = "monitors"
 
+    __table_args__ = (
+        Index("ix_monitors_user_id", "user_id"),
+        Index("ix_monitors_active_next_check", "is_active", "next_check_at"),
+    )
+
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
-    
+
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
     interval_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    
+
     alert_status: Mapped[str] = mapped_column(String(10), default="UP")
     last_alerted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     next_check_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

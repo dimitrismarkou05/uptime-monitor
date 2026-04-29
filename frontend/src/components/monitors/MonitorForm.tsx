@@ -1,10 +1,15 @@
 import { useState } from "react";
-import type { MonitorCreate } from "../../types/monitor";
+
+interface MonitorFormData {
+  url: string;
+  interval_seconds: number;
+  is_active: boolean;
+}
 
 interface MonitorFormProps {
-  onSubmit: (data: MonitorCreate) => void;
+  onSubmit: (data: MonitorFormData) => void;
   onCancel: () => void;
-  initialData?: Partial<MonitorCreate>;
+  initialData?: Partial<MonitorFormData>;
   isLoading?: boolean;
 }
 

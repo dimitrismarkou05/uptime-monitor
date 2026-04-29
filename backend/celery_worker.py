@@ -5,7 +5,11 @@ celery_app = Celery(
     "uptime_monitor",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.scheduler", "app.tasks.ping", "app.tasks.alerts"],
+    include=[
+        "app.tasks.scheduler",
+        "app.tasks.ping",
+        "app.tasks.alerts",
+    ],
 )
 
 celery_app.conf.update(
@@ -17,4 +21,5 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=30,
     worker_prefetch_multiplier=1,
+    task_always_eager=False,  # Ensure tasks run via worker in production
 )
