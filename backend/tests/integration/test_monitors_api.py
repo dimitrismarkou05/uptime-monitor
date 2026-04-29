@@ -60,3 +60,14 @@ class TestMonitorAPI:
 
         get_resp = await async_client.get(f"/api/v1/monitors/{monitor_id}")
         assert get_resp.status_code == 404
+        
+    async def test_update_monitor_not_found(self, async_client):
+        patch_resp = await async_client.patch(
+            f"/api/v1/monitors/{uuid4()}",
+            json={"interval_seconds": 600},
+        )
+        assert patch_resp.status_code == 404
+
+    async def test_delete_monitor_not_found(self, async_client):
+        del_resp = await async_client.delete(f"/api/v1/monitors/{uuid4()}")
+        assert del_resp.status_code == 404

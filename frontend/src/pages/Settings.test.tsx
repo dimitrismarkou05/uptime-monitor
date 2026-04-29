@@ -100,4 +100,34 @@ describe("Settings", () => {
       expect(logoutSpy).toHaveBeenCalled();
     });
   });
+
+  it("shows error when email update fails", async () => {
+    vi.mocked(authApi.updateEmail).mockRejectedValue(
+      new Error("Email already taken"),
+    );
+
+    render(<Settings />, { wrapper: MemoryRouter });
+
+    fireEvent.change(screen.getByDisplayValue("a@b.com"), {
+      target: { value: "new@b.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /update email/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Email already taken")).toBeInTheDocument();
+    });
+  });
+
+  it("shows error when password reset fails with string error", async () => {
+    vi.mocked(authApi.requestPasswordReset).mockRejectedValue(
+      "Too many requests",
+    );
+
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Too many requests")).toBeInTheDocument();
+    });
+  });
 });

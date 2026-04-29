@@ -37,3 +37,16 @@ class TestHealthCheck:
         resp = await async_client.get("/")
         assert resp.status_code == 200
         assert resp.json()["message"] == "Uptime Monitor API"
+        
+    async def test_health_database_degraded(self, async_client):
+        with patch("app.main.aioredis.from_url") as mock_from_url:
+            mock_redis = AsyncMock()
+            mock_redis.ping = AsyncMock(return_value=True)
+            mock_from_url.return_value = mock_redis
+            
+            with patch("sqlalchemy.ext.asyncio.AsyncSession.execute", side_effect=Exception("DB Down")):
+                resp = await async_client.get("/health")
+                assert resp.status_code == 503
+                data = resp.json()
+                assert data["status"] == "degraded"
+                assert "error" in data["services"]["database"]

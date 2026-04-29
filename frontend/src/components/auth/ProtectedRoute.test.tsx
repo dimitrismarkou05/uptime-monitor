@@ -82,4 +82,35 @@ describe("ProtectedRoute", () => {
       expect(screen.getByText("protected")).toBeInTheDocument();
     });
   });
+
+  it("logs out and redirects when syncUser fails", async () => {
+    useAuthStore.setState({ hasHydrated: true, user: null });
+    localStorage.setItem("access_token", "expired-tok");
+
+    const { syncUser } = await import("../../api/users");
+    vi.mocked(syncUser).mockRejectedValue(new Error("Token expired"));
+
+    const logoutSpy = vi.spyOn(useAuthStore.getState(), "logout");
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route path="/login" element={<div>login page</div>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div>protected</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(logoutSpy).toHaveBeenCalled();
+      expect(screen.getByText("login page")).toBeInTheDocument();
+    });
+  });
 });

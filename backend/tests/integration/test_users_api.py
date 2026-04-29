@@ -48,3 +48,15 @@ class TestUsersAPI:
 
             resp = await async_client.delete("/api/v1/users/me")
             assert resp.status_code == 204
+    
+    async def test_delete_me_supabase_error(self, async_client, db_session):
+        await async_client.post("/api/v1/users/sync")
+
+        with patch("app.api.v1.users.get_supabase_admin") as mock_get_admin:
+            mock_admin = MagicMock()
+            mock_admin.auth.admin.delete_user.side_effect = Exception("Supabase timeout")
+            mock_get_admin.return_value = mock_admin
+
+            # Should catch the error internally, log it, and still return 204 successfully
+            resp = await async_client.delete("/api/v1/users/me")
+            assert resp.status_code == 204

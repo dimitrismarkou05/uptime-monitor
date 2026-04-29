@@ -83,4 +83,35 @@ describe("Dashboard", () => {
       screen.getByRole("heading", { name: /new monitor/i }),
     ).toBeInTheDocument();
   });
+
+  it("renders error state", () => {
+    vi.mocked(useMonitors).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("Failed"),
+    } as unknown as MonitorsHook);
+
+    render(<Dashboard />, { wrapper: Wrapper });
+    expect(screen.getByText(/Failed to load monitors/i)).toBeInTheDocument();
+  });
+
+  it("filters monitors by search query and status", async () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    // Search filter
+    fireEvent.change(screen.getByPlaceholderText("Search URLs..."), {
+      target: { value: "not-a-match" },
+    });
+    expect(screen.queryByText("https://up.com")).not.toBeInTheDocument();
+
+    // Status filter
+    fireEvent.change(screen.getByPlaceholderText("Search URLs..."), {
+      target: { value: "" },
+    }); // reset
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "DOWN" },
+    });
+    expect(screen.queryByText("https://up.com")).not.toBeInTheDocument();
+  });
 });

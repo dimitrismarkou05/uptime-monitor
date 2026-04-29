@@ -1,7 +1,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import Login from "./Login";
 
@@ -82,6 +82,42 @@ describe("Login", () => {
 
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith(["a@b.com", "pass"]);
+    });
+  });
+
+  it("redirects if already authenticated", async () => {
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ isAuthenticated: true }));
+
+    render(
+      <MemoryRouter initialEntries={["/login"]}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Dashboard Page")).toBeInTheDocument();
+    });
+  });
+
+  it("handles string errors during login", async () => {
+    const login = vi.fn().mockRejectedValue("Custom string error");
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ login }));
+
+    render(<Login />, { wrapper: MemoryRouter });
+
+    fireEvent.change(screen.getByPlaceholderText(/email/i), {
+      target: { value: "a@b.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+      target: { value: "pass" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Custom string error")).toBeInTheDocument();
     });
   });
 });
