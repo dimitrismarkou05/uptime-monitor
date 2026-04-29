@@ -1,7 +1,7 @@
 import pytest
 from fastapi import HTTPException
 from unittest.mock import AsyncMock, patch
-from app.api.deps import get_current_user
+from app.api.deps import get_db, get_current_user
 
 
 @pytest.mark.unit
@@ -28,3 +28,22 @@ class TestDeps:
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user(mock_creds)
             assert exc_info.value.status_code == 401
+
+    @patch("app.api.deps.AsyncSessionLocal")
+    async def test_get_db_yields_session(self, mock_session_cls):
+        mock_session = AsyncMock()
+        mock_session_cls.return_value.__aenter__ = AsyncMock(
+            return_value=mock_session
+        )
+        mock_session_cls.return_value.__aexit__ = AsyncMock(
+            return_value=False
+        )
+
+        gen = get_db()
+        session = await anext(gen)
+        assert session is mock_session
+
+        try:
+            await anext(gen)
+        except StopAsyncIteration:
+            pass

@@ -1,0 +1,95 @@
+/// <reference types="@testing-library/jest-dom" />
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import Settings from "./Settings";
+import * as authApi from "../api/auth";
+import * as usersApi from "../api/users";
+import { useAuthStore } from "../stores/authStore";
+
+vi.mock("../api/auth");
+vi.mock("../api/users");
+
+describe("Settings", () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      user: { id: "1", email: "a@b.com" },
+      isAuthenticated: true,
+      hasHydrated: true,
+    });
+    vi.resetAllMocks();
+  });
+
+  it("renders settings page", () => {
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("heading", { name: /settings/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("updates email", async () => {
+    vi.mocked(authApi.updateEmail).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.updateEmail>>,
+    );
+
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByDisplayValue("a@b.com"), {
+      target: { value: "new@b.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /update email/i }));
+
+    await waitFor(() => {
+      expect(authApi.updateEmail).toHaveBeenCalledWith("new@b.com");
+    });
+  });
+
+  it("updates password", async () => {
+    vi.mocked(authApi.updatePassword).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.updatePassword>>,
+    );
+
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("New password"), {
+      target: { value: "newpass123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
+
+    await waitFor(() => {
+      expect(authApi.updatePassword).toHaveBeenCalledWith("newpass123");
+    });
+  });
+
+  it("deletes account after confirmation", async () => {
+    vi.mocked(usersApi.deleteAccount).mockResolvedValue(undefined);
+    const logoutSpy = vi.spyOn(useAuthStore.getState(), "logout");
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /delete account/i }));
+    confirmSpy.mockRestore();
+
+    await waitFor(() => {
+      expect(usersApi.deleteAccount).toHaveBeenCalled();
+      expect(logoutSpy).toHaveBeenCalled();
+    });
+  });
+});

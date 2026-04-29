@@ -1,0 +1,96 @@
+/// <reference types="@testing-library/jest-dom" />
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import MonitorList from "./MonitorList";
+import type { MonitorRead } from "../../types/monitor";
+
+const mockMonitors: MonitorRead[] = [
+  {
+    id: "1",
+    user_id: "u1",
+    url: "https://up.com",
+    interval_seconds: 300,
+    is_active: true,
+    alert_status: "UP",
+    last_alerted_at: null,
+    next_check_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    user_id: "u1",
+    url: "https://down.com",
+    interval_seconds: 600,
+    is_active: false,
+    alert_status: "DOWN",
+    last_alerted_at: null,
+    next_check_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+describe("MonitorList", () => {
+  it("renders empty state", () => {
+    render(
+      <MemoryRouter>
+        <MonitorList
+          monitors={[]}
+          onDelete={vi.fn()}
+          onToggle={vi.fn()}
+          onEdit={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/no monitors yet/i)).toBeInTheDocument();
+  });
+
+  it("renders monitor rows", () => {
+    render(
+      <MemoryRouter>
+        <MonitorList
+          monitors={mockMonitors}
+          onDelete={vi.fn()}
+          onToggle={vi.fn()}
+          onEdit={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("https://up.com")).toBeInTheDocument();
+    expect(screen.getByText("https://down.com")).toBeInTheDocument();
+  });
+
+  it("calls onEdit when edit clicked", () => {
+    const onEdit = vi.fn();
+    render(
+      <MemoryRouter>
+        <MonitorList
+          monitors={mockMonitors}
+          onDelete={vi.fn()}
+          onToggle={vi.fn()}
+          onEdit={onEdit}
+        />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /edit/i })[0]);
+    expect(onEdit).toHaveBeenCalledWith(mockMonitors[0]);
+  });
+
+  it("calls onToggle when switch clicked", () => {
+    const onToggle = vi.fn();
+    render(
+      <MemoryRouter>
+        <MonitorList
+          monitors={mockMonitors}
+          onDelete={vi.fn()}
+          onToggle={onToggle}
+          onEdit={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getAllByRole("button")[0]);
+    expect(onToggle).toHaveBeenCalledWith("1", false);
+  });
+});
