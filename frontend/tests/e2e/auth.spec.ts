@@ -29,6 +29,18 @@ test.describe("Authentication", () => {
   });
 
   test("shows error on invalid credentials", async ({ page }) => {
+    // Intercept the Supabase auth request and force a 400 error
+    await page.route("**/auth/v1/token*", async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "invalid_grant",
+          error_description: "Invalid login credentials",
+        }),
+      });
+    });
+
     await page.goto("/login");
 
     await page.locator("#email").fill("wrong@example.com");
