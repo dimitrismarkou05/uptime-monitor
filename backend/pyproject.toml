@@ -46,6 +46,7 @@ dev = [
     "factory-boy>=3.3.0",
     "faker>=24.0.0",
     "httpx>=0.27.0",  # FastAPI TestClient needs this
+    "aiosqlite>=0.20.0",
     
     # Linting / Formatting
     "ruff>=0.3.0",

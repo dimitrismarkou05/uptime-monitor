@@ -1,5 +1,8 @@
 pyproject.toml
+alembic/env.py
+alembic/versions/bdec7d99f7d8_init.py
 app/__init__.py
+app/main.py
 app/api/__init__.py
 app/api/deps.py
 app/api/v1/__init__.py

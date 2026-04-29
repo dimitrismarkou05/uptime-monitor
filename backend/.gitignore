@@ -7,3 +7,4 @@ alembic/versions/*.py
 !alembic/versions/.gitkeep
 .pytest_cache/
 celerybeat-schedule
+.coverage

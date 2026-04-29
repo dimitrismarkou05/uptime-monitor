@@ -21,7 +21,6 @@ export default function Login() {
         : await signIn(email, password);
 
       if (user) {
-        // Sync with backend DB immediately after login
         const syncedUser = await syncUser();
         setUser({ id: syncedUser.id, email: syncedUser.email });
         navigate("/dashboard");
@@ -46,10 +45,14 @@ export default function Login() {
         {error && <div className="text-red-500 text-sm">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email
             </label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -59,10 +62,14 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
