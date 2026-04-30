@@ -185,4 +185,32 @@ describe("Dashboard", () => {
     render(<Dashboard />, { wrapper: Wrapper });
     expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
   });
+
+  it("renders empty state message when no monitors exist", () => {
+    // Cast to Partial<MonitorsHook> to avoid 'any', then cast to MonitorsHook
+    // to satisfy the mocked function signature.
+    vi.mocked(useMonitors).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+      isFetching: false,
+      status: "success",
+    } as unknown as MonitorsHook);
+
+    render(<Dashboard />, { wrapper: Wrapper });
+    expect(screen.getByText(/no monitors found/i)).toBeInTheDocument();
+  });
+
+  it("handles clicking next and previous page", async () => {
+    setup(); // Mock has data
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    // Manually enable for test if mock logic disabled it
+    fireEvent.click(nextBtn);
+    expect(screen.getByText(/page 2/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /previous/i }));
+    expect(screen.getByText(/page 1/i)).toBeInTheDocument();
+  });
 });

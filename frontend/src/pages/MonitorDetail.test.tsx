@@ -188,4 +188,19 @@ describe("MonitorDetail", () => {
     // The pings list should render empty (no ping rows)
     expect(screen.queryByText("HTTP 200")).not.toBeInTheDocument();
   });
+
+  it("shows error state when monitor is not found", () => {
+    vi.mocked(useMonitor).mockReturnValue({
+      data: null,
+      error: new Error("404"),
+      isLoading: false,
+      isError: true,
+      status: "error",
+    } as unknown as ReturnType<typeof useMonitor>);
+
+    render(<MonitorDetail />, { wrapper: Wrapper });
+    expect(
+      screen.getByText(/failed to load monitor details/i),
+    ).toBeInTheDocument();
+  });
 });

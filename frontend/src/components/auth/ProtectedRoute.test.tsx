@@ -146,4 +146,20 @@ describe("ProtectedRoute", () => {
     });
     consoleSpy.mockRestore();
   });
+
+  it("redirects to login when not authenticated", () => {
+    useAuthStore.setState({ isAuthenticated: false, hasHydrated: true });
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route
+            path="/dashboard"
+            element={<ProtectedRoute>Child</ProtectedRoute>}
+          />
+          <Route path="/login" element={<div>Login Page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Login Page")).toBeInTheDocument();
+  });
 });

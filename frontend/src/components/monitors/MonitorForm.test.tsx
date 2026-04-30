@@ -81,4 +81,16 @@ describe("MonitorForm", () => {
       }),
     );
   });
+
+  it("prevents double submission when isLoading is true", () => {
+    const onSubmit = vi.fn();
+    render(
+      <MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} isLoading={true} />,
+    );
+
+    const submitBtn = screen.getByRole("button", { name: /saving/i });
+    fireEvent.click(submitBtn);
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });
