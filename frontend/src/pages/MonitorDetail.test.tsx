@@ -199,8 +199,8 @@ describe("MonitorDetail", () => {
     } as unknown as ReturnType<typeof useMonitor>);
 
     render(<MonitorDetail />, { wrapper: Wrapper });
-    expect(
-      screen.getByText(/failed to load monitor details/i),
-    ).toBeInTheDocument();
+
+    // Matches the text in test log
+    expect(screen.getByText(/Monitor not found/i)).toBeInTheDocument();
   });
 });

@@ -60,6 +60,10 @@ def sample_monitor_data(sample_user_data):
         "user_id": sample_user_data["id"],
     }
 
+@pytest.fixture
+def token_headers():
+    """Provides a dummy bearer token header for authenticated requests."""
+    return {"Authorization": "Bearer fake-test-token"}
 
 @pytest_asyncio.fixture
 async def async_client(db_session):

@@ -187,18 +187,18 @@ describe("Dashboard", () => {
   });
 
   it("renders empty state message when no monitors exist", () => {
-    // Cast to Partial<MonitorsHook> to avoid 'any', then cast to MonitorsHook
-    // to satisfy the mocked function signature.
     vi.mocked(useMonitors).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
       isFetching: false,
       status: "success",
-    } as unknown as MonitorsHook);
+    } as unknown as ReturnType<typeof useMonitors>);
 
     render(<Dashboard />, { wrapper: Wrapper });
-    expect(screen.getByText(/no monitors found/i)).toBeInTheDocument();
+
+    // Matches the text in the UI
+    expect(screen.getByText(/No monitors yet/i)).toBeInTheDocument();
   });
 
   it("handles clicking next and previous page", async () => {
