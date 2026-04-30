@@ -33,4 +33,22 @@ describe("App", () => {
     render(<App />);
     expect(screen.getByText("dashboard page")).toBeInTheDocument();
   });
+
+  it("renders dashboard route", () => {
+    window.history.pushState({}, "", "/dashboard");
+    render(<App />);
+    expect(screen.getByText("dashboard page")).toBeInTheDocument();
+  });
+
+  it("renders monitor detail route", () => {
+    window.history.pushState({}, "", "/monitor/123");
+    render(<App />);
+    expect(screen.getByText("detail page")).toBeInTheDocument();
+  });
+
+  it("renders settings route", () => {
+    window.history.pushState({}, "", "/settings");
+    render(<App />);
+    expect(screen.getByText("settings page")).toBeInTheDocument();
+  });
 });

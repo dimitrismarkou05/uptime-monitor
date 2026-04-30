@@ -120,4 +120,38 @@ describe("Login", () => {
       expect(screen.getByText("Custom string error")).toBeInTheDocument();
     });
   });
+
+  it("submits sign up credentials", async () => {
+    const register = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ register }));
+
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /sign up/i }));
+    fireEvent.change(screen.getByPlaceholderText(/email address/i), {
+      target: { value: "new@b.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+      target: { value: "pass123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign up/i }));
+
+    await waitFor(() => {
+      expect(register).toHaveBeenCalledWith(["new@b.com", "pass123"]);
+    });
+  });
+
+  it("shows loading spinner during login", () => {
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ isLoggingIn: true }));
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/processing/i)).toBeInTheDocument();
+  });
 });

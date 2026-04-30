@@ -1,9 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-
 from app.db.init_db import init_db
 from app.models.user import User
-
+from app.db.init_db import main
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -44,3 +43,22 @@ class TestInitDb:
         mock_db.add.assert_not_called()
         mock_db.commit.assert_not_awaited()
         mock_logger.info.assert_any_call("Admin user already exists. Skipping creation.")
+        
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestInitDbMain:
+    async def test_main_entrypoint(self):
+        with patch("app.core.logging.setup_logging") as mock_setup:  # ← FIXED PATH
+            with patch("app.db.init_db.AsyncSessionLocal") as mock_session_cls:
+                mock_session = AsyncMock()
+                mock_session_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_session
+                )
+                mock_session_cls.return_value.__aexit__ = AsyncMock(
+                    return_value=False
+                )
+
+                with patch("app.db.init_db.init_db", new_callable=AsyncMock) as mock_init:
+                    await main()
+                    mock_setup.assert_called_once()
+                    mock_init.assert_awaited_once_with(mock_session)

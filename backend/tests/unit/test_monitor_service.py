@@ -115,7 +115,17 @@ class TestMonitorService:
 
         toggled_again = await service.toggle_active(str(monitor.id), sample_user_data["id"])
         assert toggled_again.is_active is True
+ 
+    async def test_toggle_active_not_found(self, db_session, sample_user_data):
+        from app.models.user import User
 
+        user = User(**sample_user_data)
+        db_session.add(user)
+        await db_session.commit()
+
+        service = MonitorService(db_session)
+        result = await service.toggle_active(str(uuid4()), sample_user_data["id"])
+        assert result is None
 
 @pytest.mark.unit
 class TestMonitorServiceSync:
@@ -158,3 +168,11 @@ class TestMonitorServiceSync:
         assert monitor.next_check_at is not None
         assert monitor.next_check_at > now
         assert monitor.next_check_at == now + timedelta(seconds=300)  # verify exact value
+        
+    def test_update_next_check_defaults_to_now(self):
+        db = MagicMock()
+        service = MonitorService(db)
+        monitor = Mock(next_check_at=None, interval_seconds=300)
+
+        service.update_next_check_sync(monitor)
+        assert monitor.next_check_at is not None

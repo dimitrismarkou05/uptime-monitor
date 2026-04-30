@@ -60,3 +60,15 @@ class TestUsersAPI:
             # Should catch the error internally, log it, and still return 204 successfully
             resp = await async_client.delete("/api/v1/users/me")
             assert resp.status_code == 204
+            
+    async def test_delete_me_when_user_not_in_db(self, async_client):
+        """Delete should create user first (via _get_or_create_user) then delete."""
+        from unittest.mock import patch, MagicMock
+
+        with patch("app.api.v1.users.get_supabase_admin") as mock_get_admin:
+            mock_admin = MagicMock()
+            mock_admin.auth.admin.delete_user.return_value = None
+            mock_get_admin.return_value = mock_admin
+
+            resp = await async_client.delete("/api/v1/users/me")
+            assert resp.status_code == 204

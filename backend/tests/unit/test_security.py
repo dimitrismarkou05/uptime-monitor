@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from uuid import uuid4
-
+from fastapi import HTTPException
 from app.core.security import verify_token, get_supabase_admin
 
 
@@ -39,6 +39,20 @@ class TestVerifyToken:
 
             with pytest.raises(HTTPException) as exc_info:
                 await verify_token("invalid-token")
+            assert exc_info.value.status_code == 401
+    
+    @pytest.mark.asyncio
+    async def test_verify_token_user_is_none(self):
+        mock_response = Mock()
+        mock_response.user = None
+
+        with patch("app.core.security.get_supabase_admin") as mock_get_supabase:
+            mock_supabase = Mock()
+            mock_supabase.auth.get_user.return_value = mock_response
+            mock_get_supabase.return_value = mock_supabase
+
+            with pytest.raises(HTTPException) as exc_info:
+                await verify_token("valid-token-no-user")
             assert exc_info.value.status_code == 401
 
 

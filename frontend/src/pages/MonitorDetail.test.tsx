@@ -100,4 +100,51 @@ describe("MonitorDetail", () => {
     render(<MonitorDetail />, { wrapper: Wrapper });
     expect(screen.getByText(/monitor not found/i)).toBeInTheDocument();
   });
+
+  it("shows loading state", () => {
+    vi.mocked(useMonitor).mockReturnValue({
+      data: null,
+      isLoading: true,
+    } as unknown as MonitorHook);
+    vi.mocked(useMonitorStats).mockReturnValue({
+      data: null,
+      isLoading: false,
+    } as unknown as StatsHook);
+    vi.mocked(useMonitorPings).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as unknown as PingsHook);
+
+    render(<MonitorDetail />, { wrapper: Wrapper });
+    expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+  });
+
+  it("renders back button", () => {
+    vi.mocked(useMonitor).mockReturnValue({
+      data: {
+        id: "1",
+        user_id: "u1",
+        url: "https://example.com",
+        interval_seconds: 300,
+        is_active: true,
+        alert_status: "UP",
+        last_alerted_at: null,
+        next_check_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      isLoading: false,
+    } as unknown as MonitorHook);
+    vi.mocked(useMonitorStats).mockReturnValue({
+      data: null,
+      isLoading: false,
+    } as unknown as StatsHook);
+    vi.mocked(useMonitorPings).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as unknown as PingsHook);
+
+    render(<MonitorDetail />, { wrapper: Wrapper });
+    expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+  });
 });

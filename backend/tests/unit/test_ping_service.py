@@ -80,3 +80,37 @@ class TestPingService:
         assert result["alert_sent"] is None
         db.add.assert_called_once()
         db.commit.assert_called_once()
+        
+    @patch("app.services.ping_service.httpx.Client")
+    def test_check_url_connect_error(self, mock_client_class):
+        from httpx import ConnectError
+
+        mock_client = MagicMock()
+        mock_client.__enter__.return_value = mock_client
+        mock_client.get.side_effect = ConnectError("Connection failed")
+        mock_client_class.return_value = mock_client
+
+        service = PingService()
+        is_up, status_code, response_ms, error = service.check_url(
+            "https://example.com"
+        )
+
+        assert is_up is False
+        assert status_code is None
+        assert "connection failed" in error.lower()
+
+    @patch("app.services.ping_service.httpx.Client")
+    def test_check_url_generic_exception(self, mock_client_class):
+        mock_client = MagicMock()
+        mock_client.__enter__.return_value = mock_client
+        mock_client.get.side_effect = RuntimeError("Unexpected boom")
+        mock_client_class.return_value = mock_client
+
+        service = PingService()
+        is_up, status_code, response_ms, error = service.check_url(
+            "https://example.com"
+        )
+
+        assert is_up is False
+        assert status_code is None
+        assert error == "Unexpected boom"

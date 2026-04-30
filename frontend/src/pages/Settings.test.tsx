@@ -40,9 +40,13 @@ describe("Settings", () => {
   });
 
   it("updates email", async () => {
-    vi.mocked(authApi.updateEmail).mockResolvedValue(
-      {} as Awaited<ReturnType<typeof authApi.updateEmail>>,
-    );
+    vi.mocked(authApi.updateEmail).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "new@b.com",
+        created_at: new Date().toISOString(),
+      },
+    } as Awaited<ReturnType<typeof authApi.updateEmail>>);
 
     render(
       <MemoryRouter>
@@ -61,9 +65,9 @@ describe("Settings", () => {
   });
 
   it("updates password", async () => {
-    vi.mocked(authApi.updatePassword).mockResolvedValue(
-      {} as Awaited<ReturnType<typeof authApi.updatePassword>>,
-    );
+    vi.mocked(authApi.updatePassword).mockResolvedValue({
+      user: { id: "1", email: "a@b.com", created_at: new Date().toISOString() },
+    } as Awaited<ReturnType<typeof authApi.updatePassword>>);
 
     render(
       <MemoryRouter>
@@ -128,6 +132,60 @@ describe("Settings", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Too many requests")).toBeInTheDocument();
+    });
+  });
+
+  it("does not call updateEmail when unchanged", async () => {
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /update email/i }));
+    await waitFor(() => {
+      expect(authApi.updateEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  it("does not call updatePassword when empty", async () => {
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
+    await waitFor(() => {
+      expect(authApi.updatePassword).not.toHaveBeenCalled();
+    });
+  });
+
+  it("sends password reset link", async () => {
+    vi.mocked(authApi.requestPasswordReset).mockResolvedValue({});
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+    await waitFor(() => {
+      expect(authApi.requestPasswordReset).toHaveBeenCalledWith("a@b.com");
+    });
+  });
+
+  it("cancels account deletion when not confirmed", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /delete account/i }));
+    confirmSpy.mockRestore();
+    await waitFor(() => {
+      expect(usersApi.deleteAccount).not.toHaveBeenCalled();
+    });
+  });
+
+  it("displays success message after email update", async () => {
+    vi.mocked(authApi.updateEmail).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "new@b.com",
+        created_at: new Date().toISOString(),
+      },
+    } as Awaited<ReturnType<typeof authApi.updateEmail>>);
+
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.change(screen.getByDisplayValue("a@b.com"), {
+      target: { value: "new@b.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /update email/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/verification link sent/i)).toBeInTheDocument();
     });
   });
 });

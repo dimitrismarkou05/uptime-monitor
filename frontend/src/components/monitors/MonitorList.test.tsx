@@ -1,6 +1,6 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import MonitorList from "./MonitorList";
 import type { MonitorRead } from "../../types/monitor";
@@ -97,5 +97,43 @@ describe("MonitorList", () => {
     expect(toggleButton).toBeDefined();
     fireEvent.click(toggleButton!);
     expect(onToggle).toHaveBeenCalledWith("1", false);
+  });
+
+  it("calls onDelete when deletion is confirmed", async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    window.confirm = vi.fn(() => true);
+
+    render(
+      <MemoryRouter>
+        <MonitorList
+          monitors={mockMonitors}
+          onDelete={onDelete}
+          onToggle={vi.fn()}
+          onEdit={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    await waitFor(() => expect(onDelete).toHaveBeenCalledWith("1"));
+  });
+
+  it("skips onDelete when deletion is cancelled", () => {
+    const onDelete = vi.fn();
+    window.confirm = vi.fn(() => false);
+
+    render(
+      <MemoryRouter>
+        <MonitorList
+          monitors={mockMonitors}
+          onDelete={onDelete}
+          onToggle={vi.fn()}
+          onEdit={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    expect(onDelete).not.toHaveBeenCalled();
   });
 });

@@ -113,4 +113,37 @@ describe("ProtectedRoute", () => {
       expect(screen.getByText("login page")).toBeInTheDocument();
     });
   });
+
+  it("logs error to console when sync fails", async () => {
+    useAuthStore.setState({ hasHydrated: true, user: null });
+    localStorage.setItem("access_token", "expired-tok");
+
+    const { syncUser } = await import("../../api/users");
+    vi.mocked(syncUser).mockRejectedValue(new Error("Sync failed"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route path="/login" element={<div>login page</div>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div>protected</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Auth sync failed:",
+        expect.any(Error),
+      );
+    });
+    consoleSpy.mockRestore();
+  });
 });

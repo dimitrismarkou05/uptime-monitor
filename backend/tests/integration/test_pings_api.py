@@ -62,3 +62,34 @@ class TestPingsAPI:
     async def test_get_monitor_stats_404(self, async_client):
         resp = await async_client.get(f"/api/v1/pings/monitor/{uuid4()}/stats")
         assert resp.status_code == 404
+        
+    async def test_get_monitor_stats_empty(self, async_client):
+        payload = {
+            "url": "https://empty-stats.com",
+            "interval_seconds": 300,
+            "is_active": True,
+        }
+        create_resp = await async_client.post("/api/v1/monitors/", json=payload)
+        monitor_id = create_resp.json()["id"]
+
+        resp = await async_client.get(f"/api/v1/pings/monitor/{monitor_id}/stats")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_checks"] == 0
+        assert data["uptime_percent"] == 0
+        assert data["avg_response_ms"] is None
+        assert data["last_24h"]["checks"] == 0
+        assert data["last_24h"]["uptime_percent"] == 0
+
+    async def test_get_monitor_pings_default_limit(self, async_client):
+        payload = {
+            "url": "https://pings-default.com",
+            "interval_seconds": 300,
+            "is_active": True,
+        }
+        create_resp = await async_client.post("/api/v1/monitors/", json=payload)
+        monitor_id = create_resp.json()["id"]
+
+        resp = await async_client.get(f"/api/v1/pings/monitor/{monitor_id}")
+        assert resp.status_code == 200
+        assert resp.json() == []
