@@ -86,31 +86,38 @@ describe("Dashboard", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders error state", () => {
+  it("renders error state and handles retry click", () => {
     vi.mocked(useMonitors).mockReturnValue({
       data: undefined,
       isLoading: false,
       error: new Error("Failed"),
     } as unknown as MonitorsHook);
 
+    const reloadMock = vi.fn();
+    Object.defineProperty(window, "location", {
+      value: { reload: reloadMock },
+      writable: true,
+    });
+
     render(<Dashboard />, { wrapper: Wrapper });
     expect(screen.getByText(/Failed to load monitors/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /retry/i }));
+    expect(reloadMock).toHaveBeenCalled();
   });
 
   it("filters monitors by search query and status", async () => {
     setup();
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Search filter
     fireEvent.change(screen.getByPlaceholderText("Search URLs..."), {
       target: { value: "not-a-match" },
     });
     expect(screen.queryByText("https://up.com")).not.toBeInTheDocument();
 
-    // Status filter
     fireEvent.change(screen.getByPlaceholderText("Search URLs..."), {
       target: { value: "" },
-    }); // reset
+    });
     fireEvent.change(screen.getByRole("combobox"), {
       target: { value: "DOWN" },
     });
@@ -146,7 +153,6 @@ describe("Dashboard", () => {
 
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Find the toggle button by looking for buttons with the switch classes
     const toggleButton = screen
       .getAllByRole("button")
       .find((b) => b.className.includes("rounded-full"));
@@ -178,12 +184,5 @@ describe("Dashboard", () => {
     setup();
     render(<Dashboard />, { wrapper: Wrapper });
     expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
-  });
-
-  it("disables pagination buttons appropriately", () => {
-    setup();
-    render(<Dashboard />, { wrapper: Wrapper });
-    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
   });
 });

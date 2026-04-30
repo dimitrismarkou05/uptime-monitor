@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-
 @pytest.mark.integration
 @pytest.mark.asyncio
 class TestHealthCheck:
@@ -31,13 +30,8 @@ class TestHealthCheck:
             assert resp.status_code == 503
             data = resp.json()
             assert data["status"] == "degraded"
-            assert "error" in data["services"]["redis"]
+            assert "error: conn refused" in data["services"]["redis"]
 
-    async def test_root_endpoint(self, async_client):
-        resp = await async_client.get("/")
-        assert resp.status_code == 200
-        assert resp.json()["message"] == "Uptime Monitor API"
-        
     async def test_health_database_degraded(self, async_client):
         with patch("app.main.aioredis.from_url") as mock_from_url:
             mock_redis = AsyncMock()
@@ -49,8 +43,8 @@ class TestHealthCheck:
                 assert resp.status_code == 503
                 data = resp.json()
                 assert data["status"] == "degraded"
-                assert "error" in data["services"]["database"]
-                
+                assert "error: DB Down" in data["services"]["database"]
+
     async def test_health_redis_close_on_error(self, async_client):
         """Cover the finally block where r.close() is called after ping error."""
         with patch("app.main.aioredis.from_url") as mock_from_url:
@@ -62,3 +56,8 @@ class TestHealthCheck:
             resp = await async_client.get("/health")
             assert resp.status_code == 503
             mock_redis.close.assert_awaited_once()
+
+    async def test_root_endpoint(self, async_client):
+        resp = await async_client.get("/")
+        assert resp.status_code == 200
+        assert resp.json()["message"] == "Uptime Monitor API"

@@ -47,13 +47,19 @@ describe("MonitorForm", () => {
     const onSubmit = vi.fn();
     render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
 
-    // Clear the default value and submit
     fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
       target: { value: "   " },
     });
     fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
 
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("renders saving state when isLoading is true", () => {
+    render(
+      <MonitorForm onSubmit={vi.fn()} onCancel={vi.fn()} isLoading={true} />,
+    );
+    expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
   });
 
   it("toggles active state", () => {

@@ -5,7 +5,6 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import Login from "./Login";
 
-// Mock auth.ts BEFORE any import resolves it (eager Supabase client creation)
 vi.mock("../api/auth", () => ({
   signIn: vi.fn(),
   signUp: vi.fn(),
@@ -71,7 +70,6 @@ describe("Login", () => {
         <Login />
       </MemoryRouter>,
     );
-
     fireEvent.change(screen.getByPlaceholderText(/email address/i), {
       target: { value: "a@b.com" },
     });
@@ -118,6 +116,29 @@ describe("Login", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Custom string error")).toBeInTheDocument();
+    });
+  });
+
+  it("handles non-error objects during login", async () => {
+    const login = vi.fn().mockRejectedValue({ unexpected: "object" });
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ login }));
+
+    render(<Login />, { wrapper: MemoryRouter });
+
+    fireEvent.change(screen.getByPlaceholderText(/email/i), {
+      target: { value: "a@b.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+      target: { value: "pass" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Authentication failed. Please check your credentials.",
+        ),
+      ).toBeInTheDocument();
     });
   });
 

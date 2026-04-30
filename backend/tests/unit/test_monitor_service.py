@@ -1,11 +1,23 @@
 import pytest
 from datetime import datetime, timezone, timedelta
-from uuid import uuid4
-from unittest.mock import Mock, MagicMock  # Added MagicMock
+from uuid import uuid4, UUID
+from unittest.mock import Mock, MagicMock
 
-from app.services.monitor_service import MonitorService
+from app.services.monitor_service import MonitorService, _coerce_uuid
 from app.schemas.monitor import MonitorCreate, MonitorUpdate
 
+@pytest.mark.unit
+def test_coerce_uuid_with_string():
+    uuid_str = str(uuid4())
+    result = _coerce_uuid(uuid_str)
+    assert isinstance(result, UUID)
+    assert str(result) == uuid_str
+
+@pytest.mark.unit
+def test_coerce_uuid_with_uuid_object():
+    uuid_obj = uuid4()
+    result = _coerce_uuid(uuid_obj)
+    assert result == uuid_obj
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -90,7 +102,6 @@ class TestMonitorService:
         await db_session.commit()
 
         service = MonitorService(db_session)
-        # Pass string explicitly to hit _coerce_uuid
         found = await service.get_by_id(str(monitor.id), sample_user_data["id"])
         assert found is not None
         assert found.id == monitor.id
@@ -184,13 +195,13 @@ class TestMonitorServiceSync:
     def test_update_next_check(self):
         db = MagicMock()
         service = MonitorService(db)
-        monitor = Mock(next_check_at=None, interval_seconds=300)  # ADD interval_seconds
+        monitor = Mock(next_check_at=None, interval_seconds=300)
         now = datetime.now(timezone.utc)
 
         service.update_next_check_sync(monitor, now)
         assert monitor.next_check_at is not None
         assert monitor.next_check_at > now
-        assert monitor.next_check_at == now + timedelta(seconds=300)  # verify exact value
+        assert monitor.next_check_at == now + timedelta(seconds=300)
         
     def test_update_next_check_defaults_to_now(self):
         db = MagicMock()

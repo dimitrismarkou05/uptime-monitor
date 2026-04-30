@@ -84,6 +84,14 @@ describe("auth API", () => {
     expect(result.user?.email).toBe("new@b.com");
   });
 
+  it("updateEmail throws on error", async () => {
+    mockUpdateUser.mockResolvedValue({
+      data: { user: null },
+      error: new Error("email fail"),
+    });
+    await expect(updateEmail("a@b.com")).rejects.toThrow("email fail");
+  });
+
   it("updatePassword delegates to supabase", async () => {
     mockUpdateUser.mockResolvedValue({
       data: { user: {} },
@@ -93,12 +101,28 @@ describe("auth API", () => {
     expect(mockUpdateUser).toHaveBeenCalledWith({ password: "newpass" });
   });
 
+  it("updatePassword throws on error", async () => {
+    mockUpdateUser.mockResolvedValue({
+      data: { user: null },
+      error: new Error("password fail"),
+    });
+    await expect(updatePassword("pass")).rejects.toThrow("password fail");
+  });
+
   it("requestPasswordReset delegates with redirect", async () => {
     mockResetPassword.mockResolvedValue({ data: {}, error: null });
     await requestPasswordReset("a@b.com");
     expect(mockResetPassword).toHaveBeenCalledWith("a@b.com", {
       redirectTo: expect.stringContaining("/settings"),
     });
+  });
+
+  it("requestPasswordReset throws on error", async () => {
+    mockResetPassword.mockResolvedValue({
+      data: null,
+      error: new Error("reset fail"),
+    });
+    await expect(requestPasswordReset("a@b.com")).rejects.toThrow("reset fail");
   });
 
   it("getToken reads from localStorage", () => {

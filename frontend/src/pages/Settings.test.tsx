@@ -135,6 +135,38 @@ describe("Settings", () => {
     });
   });
 
+  it("shows generic fallback error when non-standard error is thrown", async () => {
+    vi.mocked(authApi.updatePassword).mockRejectedValue({ code: 500 });
+
+    render(<Settings />, { wrapper: MemoryRouter });
+
+    fireEvent.change(screen.getByPlaceholderText("New password"), {
+      target: { value: "pass123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("An unexpected error occurred"),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("handles error in delete account process", async () => {
+    vi.mocked(usersApi.deleteAccount).mockRejectedValue(
+      new Error("Delete failed"),
+    );
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /delete account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Delete failed")).toBeInTheDocument();
+    });
+    confirmSpy.mockRestore();
+  });
+
   it("does not call updateEmail when unchanged", async () => {
     render(<Settings />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole("button", { name: /update email/i }));
@@ -184,6 +216,7 @@ describe("Settings", () => {
       target: { value: "new@b.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: /update email/i }));
+
     await waitFor(() => {
       expect(screen.getByText(/verification link sent/i)).toBeInTheDocument();
     });
