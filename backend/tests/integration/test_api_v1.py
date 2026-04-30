@@ -19,9 +19,10 @@ async def test_pings_endpoints(async_client, token_headers):
     m_resp = await async_client.post("/api/v1/monitors/", json=monitor_data, headers=token_headers)
     monitor_id = m_resp.json()["id"]
     
-    # Get stats/logs for the monitor (Covers 31-41, 59-99)
-    resp = await async_client.get(f"/api/v1/pings/stats/{monitor_id}", headers=token_headers)
+    # Get stats for the monitor (Corrected path)
+    resp = await async_client.get(f"/api/v1/pings/monitor/{monitor_id}/stats", headers=token_headers)
     assert resp.status_code == 200
     
-    resp = await async_client.get(f"/api/v1/pings/logs/{monitor_id}", headers=token_headers)
+    # Get logs for the monitor (Corrected path)
+    resp = await async_client.get(f"/api/v1/pings/monitor/{monitor_id}", headers=token_headers)
     assert resp.status_code == 200

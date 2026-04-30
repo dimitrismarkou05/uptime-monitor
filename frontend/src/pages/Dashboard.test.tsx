@@ -202,11 +202,19 @@ describe("Dashboard", () => {
   });
 
   it("handles clicking next and previous page", async () => {
-    setup(); // Mock has data
+    // Override the mock to return 11 items so the "Next" button is enabled
+    vi.mocked(useMonitors).mockReturnValue({
+      data: Array.from({ length: 11 }).map((_, i) => ({
+        ...mockMonitor,
+        id: String(i),
+      })),
+      isLoading: false,
+      error: null,
+    } as unknown as MonitorsHook);
+
     render(<Dashboard />, { wrapper: Wrapper });
 
     const nextBtn = screen.getByRole("button", { name: /next/i });
-    // Manually enable for test if mock logic disabled it
     fireEvent.click(nextBtn);
     expect(screen.getByText(/page 2/i)).toBeInTheDocument();
 
