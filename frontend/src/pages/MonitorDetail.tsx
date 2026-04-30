@@ -121,7 +121,7 @@ export default function MonitorDetail() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+export function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <p className="text-sm text-gray-500 mb-1">{label}</p>

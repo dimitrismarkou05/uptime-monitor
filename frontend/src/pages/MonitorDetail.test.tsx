@@ -7,6 +7,7 @@ import MonitorDetail from "./MonitorDetail";
 import { useMonitor } from "../hooks/useMonitors";
 import { useMonitorStats, useMonitorPings } from "../hooks/usePings";
 import type { ReactNode } from "react";
+import { StatCard } from "./MonitorDetail";
 
 vi.mock("../hooks/useMonitors");
 vi.mock("../hooks/usePings");
@@ -245,5 +246,11 @@ describe("MonitorDetail", () => {
 
     expect(screen.getByText("Connection timeout")).toBeInTheDocument();
     expect(screen.queryByText(/HTTP/)).not.toBeInTheDocument();
+  });
+
+  it("StatCard renders label and value", () => {
+    render(<StatCard label="Test" value="123" />);
+    expect(screen.getByText("Test")).toBeInTheDocument();
+    expect(screen.getByText("123")).toBeInTheDocument();
   });
 });

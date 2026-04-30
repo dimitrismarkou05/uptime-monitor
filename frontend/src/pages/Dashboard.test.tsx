@@ -255,4 +255,63 @@ describe("Dashboard", () => {
       screen.getByRole("heading", { name: /edit monitor/i }),
     ).toBeInTheDocument();
   });
+
+  it("completes full edit workflow", async () => {
+    setup();
+    const updateMock = vi.fn();
+    vi.mocked(useUpdateMonitor).mockReturnValue({
+      mutate: updateMock,
+      isPending: false,
+    } as unknown as UpdateHook);
+
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    // Open edit modal
+    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+
+    // Fill form and save — assuming EditMonitorModal has a form with URL input and Save button
+    // If EditMonitorModal renders MonitorForm inside:
+    fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
+      target: { value: "https://edited.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    await waitFor(() => {
+      expect(updateMock).toHaveBeenCalledWith({
+        id: "1",
+        data: expect.objectContaining({ url: "https://edited.com" }),
+      });
+    });
+    expect(
+      screen.queryByRole("heading", { name: /edit monitor/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("next button enabled at exact page size", () => {
+    vi.mocked(useMonitors).mockReturnValue({
+      data: Array.from({ length: 10 }).map((_, i) => ({
+        ...mockMonitor,
+        id: String(i),
+      })),
+      isLoading: false,
+      error: null,
+    } as unknown as MonitorsHook);
+
+    render(<Dashboard />, { wrapper: Wrapper });
+    expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
+  });
+
+  it("deletes monitor via handleDelete", async () => {
+    setup();
+    const deleteMock = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useDeleteMonitor).mockReturnValue({
+      mutateAsync: deleteMock,
+      isPending: false,
+    } as unknown as DeleteHook);
+    window.confirm = vi.fn(() => true);
+
+    render(<Dashboard />, { wrapper: Wrapper });
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    await waitFor(() => expect(deleteMock).toHaveBeenCalledWith("1"));
+  });
 });

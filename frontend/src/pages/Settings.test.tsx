@@ -274,4 +274,34 @@ describe("Settings", () => {
       ).toBeDisabled();
     });
   });
+
+  it("does not send reset link when user email is missing", async () => {
+    useAuthStore.setState({
+      user: { id: "1", email: "" }, // empty email
+      isAuthenticated: true,
+      hasHydrated: true,
+    });
+
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+
+    await waitFor(() => {
+      expect(authApi.requestPasswordReset).not.toHaveBeenCalled();
+    });
+  });
+
+  it("does not send reset link when user is null", async () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: true,
+      hasHydrated: true,
+    });
+
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+
+    await waitFor(() => {
+      expect(authApi.requestPasswordReset).not.toHaveBeenCalled();
+    });
+  });
 });

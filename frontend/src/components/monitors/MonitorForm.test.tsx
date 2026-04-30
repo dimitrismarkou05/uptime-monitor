@@ -115,4 +115,51 @@ describe("MonitorForm", () => {
       is_active: true,
     });
   });
+
+  it("uses true is_active from initialData without coalescing", () => {
+    render(
+      <MonitorForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        initialData={{
+          url: "https://init.com",
+          interval_seconds: 900,
+          is_active: true,
+        }}
+      />,
+    );
+    // Just render and verify checkbox is checked — the branch is covered by mounting
+    expect(screen.getByRole("checkbox")).toBeChecked();
+  });
+
+  it("changes interval selection", () => {
+    const onSubmit = vi.fn();
+    render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "900" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
+      target: { value: "https://test.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ interval_seconds: 900 }),
+    );
+  });
+
+  it("defaults is_active to true when no initialData provided at all", () => {
+    const onSubmit = vi.fn();
+    render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
+      target: { value: "https://test.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ is_active: true }),
+    );
+  });
 });

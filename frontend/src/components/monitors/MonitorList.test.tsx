@@ -1,7 +1,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import MonitorList from "./MonitorList";
 import type { MonitorRead } from "../../types/monitor";
 
@@ -31,6 +31,14 @@ const mockMonitors: MonitorRead[] = [
     updated_at: new Date().toISOString(),
   },
 ];
+
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: vi.fn(),
+  };
+});
 
 describe("MonitorList", () => {
   it("renders empty state", () => {
@@ -135,5 +143,24 @@ describe("MonitorList", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
     expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("navigates to monitor detail when URL is clicked", () => {
+    const navigate = vi.fn();
+    vi.mocked(useNavigate).mockReturnValue(navigate);
+
+    render(
+      <MemoryRouter>
+        <MonitorList
+          monitors={mockMonitors}
+          onDelete={vi.fn()}
+          onToggle={vi.fn()}
+          onEdit={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByText("https://up.com"));
+    expect(navigate).toHaveBeenCalledWith("/monitor/1");
   });
 });

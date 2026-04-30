@@ -210,4 +210,43 @@ describe("Login", () => {
       expect(screen.getByText("Settings Page")).toBeInTheDocument();
     });
   });
+
+  it("handles Error instance during login", async () => {
+    const login = vi.fn().mockRejectedValue(new Error("Network error"));
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ login }));
+
+    render(<Login />, { wrapper: MemoryRouter });
+
+    fireEvent.change(screen.getByPlaceholderText(/email/i), {
+      target: { value: "a@b.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+      target: { value: "pass" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Network error")).toBeInTheDocument();
+    });
+  });
+
+  it("handles Error instance during registration", async () => {
+    const register = vi.fn().mockRejectedValue(new Error("Email taken"));
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ register }));
+
+    render(<Login />, { wrapper: MemoryRouter });
+
+    fireEvent.click(screen.getByRole("button", { name: /sign up/i }));
+    fireEvent.change(screen.getByPlaceholderText(/email address/i), {
+      target: { value: "new@b.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+      target: { value: "pass123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign up/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Email taken")).toBeInTheDocument();
+    });
+  });
 });
