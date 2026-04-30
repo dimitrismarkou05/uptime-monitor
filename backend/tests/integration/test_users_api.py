@@ -75,11 +75,25 @@ class TestUsersAPI:
 
     async def test_sync_user_creates_new(self, async_client):
         """Cover sync_user when user doesn't exist yet."""
-        # First delete if exists
-        await async_client.delete("/api/v1/users/me")
-        resp = await async_client.post("/api/v1/users/sync")
-        assert resp.status_code == 200
-        assert resp.json()["email"] == "test@example.com"
+        from unittest.mock import patch, MagicMock
+        
+        # Mock supabase admin to avoid real client creation
+        with patch("app.api.v1.users.get_supabase_admin") as mock_get_admin:
+            mock_admin = MagicMock()
+            mock_admin.auth.admin.delete_user.return_value = None
+            mock_get_admin.return_value = mock_admin
+            
+            # First delete if exists
+            await async_client.delete("/api/v1/users/me")
+            
+        # Now sync should create fresh
+        with patch("app.api.v1.users.get_supabase_admin") as mock_get_admin:
+            mock_admin = MagicMock()
+            mock_get_admin.return_value = mock_admin
+            
+            resp = await async_client.post("/api/v1/users/sync")
+            assert resp.status_code == 200
+            assert resp.json()["email"] == "test@example.com"
 
     async def test_delete_me_without_supabase(self, async_client):
         """Cover delete when supabase cleanup fails."""

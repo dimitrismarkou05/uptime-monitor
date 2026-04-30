@@ -64,8 +64,8 @@ async def delete_current_user(
     await db.commit()
 
     # 2. Best-effort Supabase Auth cleanup
-    supabase = get_supabase_admin()
     try:
+        supabase = get_supabase_admin()
         supabase.auth.admin.delete_user(current_user["supabase_uid"])
     except Exception as e:
         logger.error(f"Failed to delete Supabase auth user: {e}", exc_info=True)

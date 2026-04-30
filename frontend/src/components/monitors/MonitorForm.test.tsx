@@ -42,4 +42,37 @@ describe("MonitorForm", () => {
     expect(screen.getByDisplayValue("https://init.com")).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toHaveValue("900");
   });
+
+  it("does not submit empty url", () => {
+    const onSubmit = vi.fn();
+    render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    // Clear the default value and submit
+    fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
+      target: { value: "   " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("toggles active state", () => {
+    const onSubmit = vi.fn();
+    render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    const checkbox = screen.getByRole("checkbox");
+    fireEvent.click(checkbox); // uncheck
+    fireEvent.click(checkbox); // check again
+
+    fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
+      target: { value: "https://test.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        is_active: true,
+      }),
+    );
+  });
 });

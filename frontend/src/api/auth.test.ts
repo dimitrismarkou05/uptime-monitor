@@ -105,4 +105,9 @@ describe("auth API", () => {
     localStorage.setItem("access_token", "tok");
     expect(getToken()).toBe("tok");
   });
+
+  it("getToken returns null when no token", () => {
+    localStorage.removeItem("access_token");
+    expect(getToken()).toBeNull();
+  });
 });

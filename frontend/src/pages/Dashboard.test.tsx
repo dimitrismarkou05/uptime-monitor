@@ -179,4 +179,11 @@ describe("Dashboard", () => {
     render(<Dashboard />, { wrapper: Wrapper });
     expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
   });
+
+  it("disables pagination buttons appropriately", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
+  });
 });
