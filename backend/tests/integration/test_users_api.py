@@ -102,3 +102,18 @@ class TestUsersAPI:
             mock_get.side_effect = Exception("No supabase")
             resp = await async_client.delete("/api/v1/users/me")
             assert resp.status_code == 204
+            
+    async def test_delete_me_logs_supabase_error(self, async_client, db_session, caplog):
+        """Ensure the logger.error line in the except block is executed."""
+        import logging
+        await async_client.post("/api/v1/users/sync")
+        
+        with patch("app.api.v1.users.get_supabase_admin") as mock_get_admin:
+            mock_admin = MagicMock()
+            mock_admin.auth.admin.delete_user.side_effect = RuntimeError("boom")
+            mock_get_admin.return_value = mock_admin
+            
+            with caplog.at_level(logging.ERROR):
+                resp = await async_client.delete("/api/v1/users/me")
+                assert resp.status_code == 204
+                assert "boom" in caplog.text

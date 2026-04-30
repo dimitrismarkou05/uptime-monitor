@@ -84,5 +84,6 @@ target-version = ["py311"]
 
 # Coverage reporting
 [tool.coverage.run]
+concurrency = ["greenlet", "thread"]
 source = ["app"]
 omit = ["*/tests/*", "*/alembic/*", "*/__init__.py"]

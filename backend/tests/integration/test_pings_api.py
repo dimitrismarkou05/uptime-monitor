@@ -110,3 +110,13 @@ class TestPingsAPI:
         assert data["avg_response_ms"] is None
         assert data["total_checks"] == 0
         assert data["last_24h"]["checks"] == 0
+        
+    async def test_get_monitor_pings_invalid_uuid(self, async_client):
+        resp = await async_client.get("/api/v1/pings/monitor/not-a-uuid")
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "Invalid monitor ID format"
+
+    async def test_get_monitor_stats_invalid_uuid(self, async_client):
+        resp = await async_client.get("/api/v1/pings/monitor/not-a-uuid/stats")
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "Invalid monitor ID format"

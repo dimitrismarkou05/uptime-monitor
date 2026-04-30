@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4, UUID
 from unittest.mock import Mock, MagicMock
+from sqlalchemy import select
 
 from app.services.monitor_service import MonitorService, _coerce_uuid
 from app.schemas.monitor import MonitorCreate, MonitorUpdate
@@ -160,6 +161,30 @@ class TestMonitorService:
         service = MonitorService(db_session)
         result = await service.toggle_active(str(uuid4()), sample_user_data["id"])
         assert result is None
+        
+    async def test_delete_monitor(self, db_session, sample_user_data):
+        from app.models.user import User
+        from app.models.monitor import Monitor
+        user = User(**sample_user_data)
+        db_session.add(user)
+        await db_session.commit()
+
+        monitor = Monitor(
+            id=uuid4(),
+            url="https://delete-test.com",
+            interval_seconds=300,
+            user_id=sample_user_data["id"],
+        )
+        db_session.add(monitor)
+        await db_session.commit()
+
+        service = MonitorService(db_session)
+        await service.delete(monitor)
+        
+        result = await db_session.execute(
+            select(Monitor).where(Monitor.id == monitor.id)
+        )
+        assert result.scalar_one_or_none() is None
 
 @pytest.mark.unit
 class TestMonitorServiceSync:
@@ -210,3 +235,21 @@ class TestMonitorServiceSync:
 
         service.update_next_check_sync(monitor)
         assert monitor.next_check_at is not None
+        
+    def test_get_due_monitors_defaults_to_now(self):
+        db = MagicMock()
+        service = MonitorService(db)
+        
+        now = datetime.now(timezone.utc)
+        due_monitor = Mock(
+            id=uuid4(),
+            is_active=True,
+            next_check_at=now - timedelta(minutes=5),
+        )
+        
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = [due_monitor]
+        db.execute.return_value = result
+        
+        due = service.get_due_monitors_sync(db)
+        assert len(due) == 1

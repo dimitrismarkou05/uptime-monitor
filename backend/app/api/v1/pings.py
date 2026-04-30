@@ -11,6 +11,11 @@ from app.schemas.ping_log import PingLogRead
 
 router = APIRouter()
 
+def _coerce_monitor_id(monitor_id: str) -> UUID:
+    try:
+        return UUID(monitor_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid monitor ID format")
 
 @router.get("/monitor/{monitor_id}", response_model=list[PingLogRead])
 @limiter.limit("60/minute")
@@ -21,7 +26,7 @@ async def get_monitor_pings(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    monitor_uuid = UUID(monitor_id)  # ← coerce to UUID
+    monitor_uuid = _coerce_monitor_id(monitor_id)
     result = await db.execute(
         select(Monitor).where(
             Monitor.id == monitor_uuid,
@@ -49,7 +54,7 @@ async def get_monitor_stats(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    monitor_uuid = UUID(monitor_id)  # ← coerce to UUID
+    monitor_uuid = _coerce_monitor_id(monitor_id)
     result = await db.execute(
         select(Monitor).where(
             Monitor.id == monitor_uuid,
