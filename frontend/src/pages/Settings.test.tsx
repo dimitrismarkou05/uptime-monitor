@@ -221,4 +221,57 @@ describe("Settings", () => {
       expect(screen.getByText(/verification link sent/i)).toBeInTheDocument();
     });
   });
+
+  it("disables buttons while loading during email update", async () => {
+    vi.mocked(authApi.updateEmail).mockImplementation(
+      () => new Promise(() => {}), // never resolves
+    );
+
+    render(<Settings />, { wrapper: MemoryRouter });
+
+    fireEvent.change(screen.getByDisplayValue("a@b.com"), {
+      target: { value: "new@b.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /update email/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /update email/i }),
+      ).toBeDisabled();
+    });
+  });
+
+  it("disables buttons while loading during password update", async () => {
+    vi.mocked(authApi.updatePassword).mockImplementation(
+      () => new Promise(() => {}),
+    );
+
+    render(<Settings />, { wrapper: MemoryRouter });
+
+    fireEvent.change(screen.getByPlaceholderText("New password"), {
+      target: { value: "newpass123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /set password/i }),
+      ).toBeDisabled();
+    });
+  });
+
+  it("disables reset link button while loading", async () => {
+    vi.mocked(authApi.requestPasswordReset).mockImplementation(
+      () => new Promise(() => {}),
+    );
+
+    render(<Settings />, { wrapper: MemoryRouter });
+    fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /send reset link/i }),
+      ).toBeDisabled();
+    });
+  });
 });

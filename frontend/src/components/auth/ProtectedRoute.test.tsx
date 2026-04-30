@@ -162,4 +162,44 @@ describe("ProtectedRoute", () => {
     );
     expect(screen.getByText("Login Page")).toBeInTheDocument();
   });
+
+  it("syncs user when token exists but user is null", async () => {
+    useAuthStore.setState({
+      hasHydrated: true,
+      user: null,
+      isAuthenticated: false,
+    });
+    localStorage.setItem("access_token", "valid-tok");
+
+    const { syncUser } = await import("../../api/users");
+    // CRITICAL: Reset any previous rejected mock from other tests
+    vi.mocked(syncUser).mockReset();
+    vi.mocked(syncUser).mockResolvedValue({
+      id: "1",
+      email: "a@b.com",
+      created_at: new Date().toISOString(),
+    });
+
+    const setUserSpy = vi.spyOn(useAuthStore.getState(), "setUser");
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route path="/login" element={<div>login page</div>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div>protected</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(setUserSpy).toHaveBeenCalledWith({ id: "1", email: "a@b.com" });
+    });
+  });
 });

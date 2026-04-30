@@ -59,4 +59,33 @@ describe("UptimeChart", () => {
     // Verify the passed count
     expect(screen.getByText(/1\s+passed/i)).toBeInTheDocument();
   });
+
+  it("renders yellow text for 95-98% uptime", async () => {
+    vi.mocked(pingsApi.getMonitorPings).mockResolvedValue([
+      ...Array.from({ length: 96 }).map((_, i) => ({
+        id: `p${i}`,
+        monitor_id: "m1",
+        timestamp: new Date().toISOString(),
+        status_code: 200,
+        response_ms: 100,
+        is_up: true,
+        error_message: null,
+      })),
+      ...Array.from({ length: 4 }).map((_, i) => ({
+        id: `f${i}`,
+        monitor_id: "m1",
+        timestamp: new Date().toISOString(),
+        status_code: 500,
+        response_ms: null,
+        is_up: false,
+        error_message: "err",
+      })),
+    ]);
+
+    render(<UptimeChart monitorId="m1" />, { wrapper: Wrapper });
+
+    await screen.findByText(/96% uptime/i);
+    const uptimeText = screen.getByText(/96% uptime/i);
+    expect(uptimeText.className).toContain("text-yellow-600");
+  });
 });

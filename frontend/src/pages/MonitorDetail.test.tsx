@@ -203,4 +203,47 @@ describe("MonitorDetail", () => {
     // Matches the text in test log
     expect(screen.getByText(/Monitor not found/i)).toBeInTheDocument();
   });
+
+  it("renders ping with error message", () => {
+    vi.mocked(useMonitor).mockReturnValue({
+      data: {
+        id: "1",
+        user_id: "u1",
+        url: "https://example.com",
+        interval_seconds: 300,
+        is_active: true,
+        alert_status: "DOWN",
+        last_alerted_at: null,
+        next_check_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      isLoading: false,
+    } as unknown as MonitorHook);
+
+    vi.mocked(useMonitorStats).mockReturnValue({
+      data: null,
+      isLoading: false,
+    } as unknown as StatsHook);
+
+    vi.mocked(useMonitorPings).mockReturnValue({
+      data: [
+        {
+          id: "p1",
+          monitor_id: "1",
+          timestamp: new Date().toISOString(),
+          status_code: null,
+          response_ms: null,
+          is_up: false,
+          error_message: "Connection timeout",
+        },
+      ],
+      isLoading: false,
+    } as unknown as PingsHook);
+
+    render(<MonitorDetail />, { wrapper: Wrapper });
+
+    expect(screen.getByText("Connection timeout")).toBeInTheDocument();
+    expect(screen.queryByText(/HTTP/)).not.toBeInTheDocument();
+  });
 });

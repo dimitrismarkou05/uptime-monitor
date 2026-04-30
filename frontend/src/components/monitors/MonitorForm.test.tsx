@@ -93,4 +93,26 @@ describe("MonitorForm", () => {
 
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it("defaults is_active to true when initialData has no is_active field", () => {
+    const onSubmit = vi.fn();
+    render(
+      <MonitorForm
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+        initialData={{ url: "https://init.com", interval_seconds: 900 }}
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
+      target: { value: "https://test.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      url: "https://test.com",
+      interval_seconds: 900,
+      is_active: true,
+    });
+  });
 });

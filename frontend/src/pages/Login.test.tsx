@@ -185,4 +185,29 @@ describe("Login", () => {
     );
     expect(screen.getByText(/processing/i)).toBeInTheDocument();
   });
+
+  it("redirects to original requested page after login", async () => {
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ isAuthenticated: true }));
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/login",
+            state: { from: { pathname: "/settings" } },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/settings" element={<div>Settings Page</div>} />
+          <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Settings Page")).toBeInTheDocument();
+    });
+  });
 });

@@ -221,4 +221,38 @@ describe("Dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: /previous/i }));
     expect(screen.getByText(/page 1/i)).toBeInTheDocument();
   });
+
+  it("keeps monitor visible when search matches and status is ALL", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    fireEvent.change(screen.getByPlaceholderText("Search URLs..."), {
+      target: { value: "up.com" },
+    });
+    expect(screen.getByText("https://up.com")).toBeInTheDocument();
+  });
+
+  it("keeps monitor visible when status filter matches", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "UP" },
+    });
+    expect(screen.getByText("https://up.com")).toBeInTheDocument();
+  });
+
+  it("opens edit modal when edit is triggered", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    // Find and click the edit button in MonitorList
+    // (Assuming MonitorList renders an edit button per monitor)
+    const editButton = screen.getByRole("button", { name: /edit/i });
+    fireEvent.click(editButton);
+
+    expect(
+      screen.getByRole("heading", { name: /edit monitor/i }),
+    ).toBeInTheDocument();
+  });
 });
