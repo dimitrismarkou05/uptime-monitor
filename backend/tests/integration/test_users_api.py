@@ -72,3 +72,19 @@ class TestUsersAPI:
 
             resp = await async_client.delete("/api/v1/users/me")
             assert resp.status_code == 204
+
+    async def test_sync_user_creates_new(self, async_client):
+        """Cover sync_user when user doesn't exist yet."""
+        # First delete if exists
+        await async_client.delete("/api/v1/users/me")
+        resp = await async_client.post("/api/v1/users/sync")
+        assert resp.status_code == 200
+        assert resp.json()["email"] == "test@example.com"
+
+    async def test_delete_me_without_supabase(self, async_client):
+        """Cover delete when supabase cleanup fails."""
+        from unittest.mock import patch
+        with patch("app.api.v1.users.get_supabase_admin") as mock_get:
+            mock_get.side_effect = Exception("No supabase")
+            resp = await async_client.delete("/api/v1/users/me")
+            assert resp.status_code == 204

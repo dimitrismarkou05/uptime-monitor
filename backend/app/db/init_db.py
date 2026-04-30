@@ -44,5 +44,5 @@ async def main():
     async with AsyncSessionLocal() as session:
         await init_db(session)
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     asyncio.run(main())

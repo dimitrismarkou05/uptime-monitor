@@ -93,3 +93,20 @@ class TestPingsAPI:
         resp = await async_client.get(f"/api/v1/pings/monitor/{monitor_id}")
         assert resp.status_code == 200
         assert resp.json() == []
+
+    async def test_get_monitor_stats_no_pings(self, async_client):
+        """Cover the None branches for avg_response_ms and zero checks."""
+        payload = {
+            "url": "https://no-pings.com",
+            "interval_seconds": 300,
+            "is_active": True,
+        }
+        create_resp = await async_client.post("/api/v1/monitors/", json=payload)
+        monitor_id = create_resp.json()["id"]
+
+        resp = await async_client.get(f"/api/v1/pings/monitor/{monitor_id}/stats")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["avg_response_ms"] is None
+        assert data["total_checks"] == 0
+        assert data["last_24h"]["checks"] == 0

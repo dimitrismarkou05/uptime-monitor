@@ -71,6 +71,29 @@ class TestMonitorService:
 
         not_found = await service.get_by_id(str(uuid4()), sample_user_data["id"])
         assert not_found is None
+        
+    async def test_get_by_id_with_string_uuid(self, db_session, sample_user_data):
+        from app.models.user import User
+        from app.models.monitor import Monitor
+        
+        user = User(**sample_user_data)
+        db_session.add(user)
+        await db_session.commit()
+
+        monitor = Monitor(
+            id=uuid4(),
+            url="https://test.com",
+            interval_seconds=300,
+            user_id=sample_user_data["id"],
+        )
+        db_session.add(monitor)
+        await db_session.commit()
+
+        service = MonitorService(db_session)
+        # Pass string explicitly to hit _coerce_uuid
+        found = await service.get_by_id(str(monitor.id), sample_user_data["id"])
+        assert found is not None
+        assert found.id == monitor.id
 
     async def test_update_monitor(self, db_session, sample_user_data):
         from app.models.user import User

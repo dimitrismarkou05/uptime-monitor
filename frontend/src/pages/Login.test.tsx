@@ -154,4 +154,14 @@ describe("Login", () => {
     );
     expect(screen.getByText(/processing/i)).toBeInTheDocument();
   });
+
+  it("shows loading state during registration", () => {
+    vi.mocked(useAuth).mockReturnValue(mockAuth({ isRegistering: true }));
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/processing/i)).toBeInTheDocument();
+  });
 });

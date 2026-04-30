@@ -50,3 +50,15 @@ class TestHealthCheck:
                 data = resp.json()
                 assert data["status"] == "degraded"
                 assert "error" in data["services"]["database"]
+                
+    async def test_health_redis_close_on_error(self, async_client):
+        """Cover the finally block where r.close() is called after ping error."""
+        with patch("app.main.aioredis.from_url") as mock_from_url:
+            mock_redis = AsyncMock()
+            mock_redis.ping = AsyncMock(side_effect=Exception("ping failed"))
+            mock_redis.close = AsyncMock()
+            mock_from_url.return_value = mock_redis
+
+            resp = await async_client.get("/health")
+            assert resp.status_code == 503
+            mock_redis.close.assert_awaited_once()

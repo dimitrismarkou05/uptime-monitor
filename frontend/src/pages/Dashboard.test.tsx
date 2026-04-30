@@ -167,4 +167,16 @@ describe("Dashboard", () => {
     expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
     expect(screen.getByText(/page\s+1/i)).toBeInTheDocument();
   });
+
+  it("disables next button when fewer monitors than page size", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
+  });
+
+  it("disables previous button on first page", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
+  });
 });

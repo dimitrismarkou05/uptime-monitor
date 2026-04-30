@@ -147,4 +147,45 @@ describe("MonitorDetail", () => {
     render(<MonitorDetail />, { wrapper: Wrapper });
     expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
   });
+
+  it("renders without pings", () => {
+    vi.mocked(useMonitor).mockReturnValue({
+      data: {
+        id: "1",
+        user_id: "u1",
+        url: "https://example.com",
+        interval_seconds: 300,
+        is_active: true,
+        alert_status: "UP",
+        last_alerted_at: null,
+        next_check_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      isLoading: false,
+    } as unknown as MonitorHook);
+
+    vi.mocked(useMonitorStats).mockReturnValue({
+      data: {
+        total_checks: 0,
+        uptime_count: 0,
+        uptime_percent: 0,
+        avg_response_ms: null,
+        last_24h: { checks: 0, uptime_percent: 0 },
+      },
+      isLoading: false,
+    } as unknown as StatsHook);
+
+    vi.mocked(useMonitorPings).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as unknown as PingsHook);
+
+    render(<MonitorDetail />, { wrapper: Wrapper });
+
+    expect(screen.getByText("https://example.com")).toBeInTheDocument();
+    expect(screen.getByText("Recent Checks")).toBeInTheDocument();
+    // The pings list should render empty (no ping rows)
+    expect(screen.queryByText("HTTP 200")).not.toBeInTheDocument();
+  });
 });
