@@ -169,18 +169,26 @@ describe("Settings", () => {
 
   it("does not call updateEmail when unchanged", async () => {
     render(<Settings />, { wrapper: MemoryRouter });
-    fireEvent.click(screen.getByRole("button", { name: /update email/i }));
-    await waitFor(() => {
-      expect(authApi.updateEmail).not.toHaveBeenCalled();
-    });
+
+    // Find the input by its current value (mock user email is a@b.com)
+    const emailInput = screen.getByDisplayValue("a@b.com");
+    const emailForm = emailInput.closest("form")!;
+
+    fireEvent.submit(emailForm);
+
+    expect(authApi.updateEmail).not.toHaveBeenCalled();
   });
 
   it("does not call updatePassword when empty", async () => {
     render(<Settings />, { wrapper: MemoryRouter });
-    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
-    await waitFor(() => {
-      expect(authApi.updatePassword).not.toHaveBeenCalled();
-    });
+
+    // Find the password input by its placeholder
+    const passwordInput = screen.getByPlaceholderText("New password");
+    const passwordForm = passwordInput.closest("form")!;
+
+    fireEvent.submit(passwordForm);
+
+    expect(authApi.updatePassword).not.toHaveBeenCalled();
   });
 
   it("sends password reset link", async () => {

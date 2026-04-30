@@ -174,4 +174,29 @@ describe("MonitorForm", () => {
 
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it("prevents submission if the URL is only whitespace", () => {
+    const onSubmit = vi.fn();
+    render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    const input = screen.getByPlaceholderText("https://example.com");
+    fireEvent.change(input, { target: { value: "   " } }); // Whitespace only
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("exits early if URL is just whitespace", () => {
+    const onSubmit = vi.fn();
+    render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    const input = screen.getByPlaceholderText("https://example.com");
+
+    // Set to whitespace and submit the form directly
+    fireEvent.change(input, { target: { value: "   " } });
+    fireEvent.submit(input.closest("form")!);
+
+    // This ensures the code hits the 'return' inside the guard clause
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });
