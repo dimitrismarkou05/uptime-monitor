@@ -162,4 +162,16 @@ describe("MonitorForm", () => {
       expect.objectContaining({ is_active: true }),
     );
   });
+
+  it("returns early and does not submit if url is completely empty", () => {
+    const onSubmit = vi.fn();
+    render(<MonitorForm onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save monitor/i }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });

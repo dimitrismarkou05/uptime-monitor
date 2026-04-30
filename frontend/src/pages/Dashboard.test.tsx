@@ -314,4 +314,51 @@ describe("Dashboard", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
     await waitFor(() => expect(deleteMock).toHaveBeenCalledWith("1"));
   });
+
+  it("closes the new monitor form when onCancel is triggered", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    // Open the form
+    fireEvent.click(screen.getByRole("button", { name: /add monitor/i }));
+    expect(
+      screen.getByRole("heading", { name: /new monitor/i }),
+    ).toBeInTheDocument();
+
+    // Click the cancel button inside MonitorForm
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(
+      screen.queryByRole("heading", { name: /new monitor/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes the edit monitor modal when onClose is triggered", () => {
+    setup();
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    // Open the edit modal
+    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+    expect(
+      screen.getByRole("heading", { name: /edit monitor/i }),
+    ).toBeInTheDocument();
+
+    // Click the cancel button inside EditMonitorModal
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(
+      screen.queryByRole("heading", { name: /edit monitor/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("displays loading spinner when monitors are initially loading", () => {
+    vi.mocked(useMonitors).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    } as unknown as MonitorsHook);
+
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    // Check for the presence of the animate-spin class
+    expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+  });
 });
