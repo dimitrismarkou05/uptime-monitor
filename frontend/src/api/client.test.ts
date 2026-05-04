@@ -246,7 +246,7 @@ describe("apiClient", () => {
   it("passes successful responses through", async () => {
     await import("./client");
 
-    const [, , successFn] = mockResponseUse.mock.calls[0];
+    const [successFn] = mockResponseUse.mock.calls[0];
     const response = { data: { ok: true }, status: 200 };
     expect(successFn(response)).toBe(response);
   });
