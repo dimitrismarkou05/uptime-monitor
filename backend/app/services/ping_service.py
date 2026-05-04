@@ -28,7 +28,10 @@ class PingService:
             with httpx.Client(
                 timeout=self.DEFAULT_TIMEOUT,
                 follow_redirects=True,
-                headers={"User-Agent": "UptimeMonitor/1.0"},
+                headers={
+                    "User-Agent": "UptimeMonitor/1.0",
+                    "Accept-Encoding": "identity",
+                    },
             ) as client:
                 response = client.get(url)
                 status_code = response.status_code
