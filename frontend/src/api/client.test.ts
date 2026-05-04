@@ -130,7 +130,7 @@ describe("apiClient", () => {
         }),
     );
 
-    await import("./client");
+    const { default: apiClient } = await import("./client");
 
     const [, errorFn] = mockResponseUse.mock.calls[0];
     // Use separate error objects to avoid shared mutation of _retry flag
@@ -148,9 +148,20 @@ describe("apiClient", () => {
 
     resolveRefresh!("new-tok");
 
-    const r1 = await p1;
-    const r2 = await p2;
-    expect(r1.headers.Authorization).toBe("Bearer new-tok");
-    expect(r2.headers.Authorization).toBe("Bearer new-tok");
+    await p1;
+    await p2;
+
+    // Verify apiClient was called with the retried requests carrying the new token
+    const calls = vi.mocked(apiClient).mock.calls;
+    expect(calls.length).toBeGreaterThanOrEqual(2);
+    // The retried configs should have the new token set
+    const retried1 = calls[calls.length - 2][0] as unknown as {
+      headers: { Authorization?: string };
+    };
+    const retried2 = calls[calls.length - 1][0] as unknown as {
+      headers: { Authorization?: string };
+    };
+    expect(retried1.headers.Authorization).toBe("Bearer new-tok");
+    expect(retried2.headers.Authorization).toBe("Bearer new-tok");
   });
 });
