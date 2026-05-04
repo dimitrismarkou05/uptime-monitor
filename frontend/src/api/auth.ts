@@ -1,8 +1,16 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-export const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+let _supabase: ReturnType<typeof createClient> | null = null;
+
+function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(supabaseUrl, supabaseKey);
+  }
+  return _supabase;
+}
 
 const TOKEN_KEY = "access_token";
 const REFRESH_KEY = "refresh_token";
@@ -11,7 +19,6 @@ const EXPIRES_KEY = "token_expires_at";
 function saveSession(session: Session) {
   localStorage.setItem(TOKEN_KEY, session.access_token);
   localStorage.setItem(REFRESH_KEY, session.refresh_token);
-  // expires_in is in seconds store absolute timestamp
   const expiresAt = Date.now() + session.expires_in * 1000;
   localStorage.setItem(EXPIRES_KEY, String(expiresAt));
 }
@@ -42,7 +49,7 @@ export function isTokenExpiringSoon(bufferMs: number = 5 * 60 * 1000): boolean {
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await getSupabase().auth.signInWithPassword({
     email,
     password,
   });
@@ -52,14 +59,14 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await getSupabase().auth.signUp({ email, password });
   if (error) throw error;
   if (data.session) saveSession(data.session);
   return data.user;
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  await getSupabase().auth.signOut();
   clearSession();
 }
 
@@ -69,7 +76,7 @@ export async function refreshSession(): Promise<string> {
     throw new Error("No refresh token available");
   }
 
-  const { data, error } = await supabase.auth.refreshSession({
+  const { data, error } = await getSupabase().auth.refreshSession({
     refresh_token: refreshToken,
   });
 
@@ -83,21 +90,24 @@ export async function refreshSession(): Promise<string> {
 }
 
 export async function updateEmail(email: string) {
-  const { data, error } = await supabase.auth.updateUser({ email });
+  const { data, error } = await getSupabase().auth.updateUser({ email });
   if (error) throw error;
   return data;
 }
 
 export async function updatePassword(password: string) {
-  const { data, error } = await supabase.auth.updateUser({ password });
+  const { data, error } = await getSupabase().auth.updateUser({ password });
   if (error) throw error;
   return data;
 }
 
 export async function requestPasswordReset(email: string) {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/settings`,
-  });
+  const { data, error } = await getSupabase().auth.resetPasswordForEmail(
+    email,
+    {
+      redirectTo: `${window.location.origin}/settings`,
+    },
+  );
   if (error) throw error;
   return data;
 }
