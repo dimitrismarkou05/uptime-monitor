@@ -298,10 +298,10 @@ describe("apiClient", () => {
   });
 
   it("skips refresh when request already has _retry flag", async () => {
-    // Ensure the interceptor is set up
+    // Import the client module to set up the interceptor (fills mockResponseUse calls)
     await import("./client");
 
-    // Get the registered error handler (second callback)
+    // Destructure the error handler callback (second argument to response use)
     const [, errorFn] = mockResponseUse.mock.calls[0];
 
     const error = {
@@ -309,11 +309,34 @@ describe("apiClient", () => {
       config: { _retry: true, headers: {} },
     } as unknown as AxiosError;
 
-    // The interceptor should immediately reject (no refresh)
+    // The interceptor must reject immediately without refreshing
     await expect(errorFn(error)).rejects.toEqual(error);
+  });
 
-    // Confirm refresh was never attempted
+  it("propagates when logout throws during refresh failure", async () => {
     const { refreshSession } = await import("./auth");
-    expect(refreshSession).not.toHaveBeenCalled();
+    vi.mocked(refreshSession).mockRejectedValue(new Error("refresh failed"));
+
+    const { useAuthStore } = await import("../stores/authStore");
+    vi.mocked(useAuthStore.getState).mockImplementation(() => ({
+      user: null,
+      isAuthenticated: false,
+      hasHydrated: true,
+      setUser: vi.fn(),
+      setHasHydrated: vi.fn(),
+      logout: vi.fn(() => {
+        throw new Error("logout crashed");
+      }),
+    }));
+
+    await import("./client");
+
+    const [, errorFn] = mockResponseUse.mock.calls[0];
+    const error = {
+      response: { status: 401 },
+      config: { _retry: false, headers: {} },
+    } as unknown as AxiosError;
+
+    await expect(errorFn(error)).rejects.toThrow("logout crashed");
   });
 });

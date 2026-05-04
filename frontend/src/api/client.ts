@@ -75,24 +75,34 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
+      let newToken: string;
+
+      // Only wrap the actual refresh operation in the try/catch
       try {
         refreshPromise = refreshSession();
-        const newToken = await refreshPromise;
+        newToken = await refreshPromise;
         if (!newToken) {
           throw new Error("Session refresh returned empty token");
         }
-        processQueue(null, newToken);
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
         // Graceful state wipe triggering React Router redirect
         useAuthStore.getState().logout();
-        return Promise.reject(refreshError);
-      } finally {
         isRefreshing = false;
         refreshPromise = null;
+        return Promise.reject(refreshError);
       }
+
+      // Success path execution
+      isRefreshing = false;
+      refreshPromise = null;
+
+      processQueue(null, newToken);
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+      // Returning the un-awaited Promise here avoids catching retry failures
+      // as "refresh failures" and safely sidesteps the V8 coverage glitch.
+      return apiClient(originalRequest);
     }
 
     return Promise.reject(error);
