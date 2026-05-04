@@ -278,4 +278,22 @@ describe("apiClient", () => {
     const response = { data: { ok: true }, status: 200 };
     expect(successFn(response)).toBe(response);
   });
+
+  it("retries request with new token after successful refresh", async () => {
+    const { refreshSession } = await import("./auth");
+    vi.mocked(refreshSession).mockResolvedValue("new-tok");
+
+    const { default: apiClient } = await import("./client");
+
+    const [, errorFn] = mockResponseUse.mock.calls[0];
+    const error = {
+      response: { status: 401 },
+      config: { _retry: false, headers: {} },
+    } as unknown as AxiosError;
+
+    vi.mocked(apiClient).mockResolvedValueOnce({ data: { ok: true } });
+
+    const result = await errorFn(error);
+    expect(result.data.ok).toBe(true);
+  });
 });

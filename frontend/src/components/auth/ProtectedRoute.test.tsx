@@ -13,6 +13,16 @@ vi.mock("../../api/users", () => ({
   }),
 }));
 
+vi.mock("../../api/auth", async () => {
+  const actual =
+    await vi.importActual<typeof import("../../api/auth")>("../../api/auth");
+  return {
+    ...actual,
+    isTokenExpiringSoon: vi.fn(),
+    refreshSession: vi.fn(),
+  };
+});
+
 describe("ProtectedRoute", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -210,8 +220,14 @@ describe("ProtectedRoute", () => {
       isAuthenticated: false,
     });
     localStorage.setItem("access_token", "expired-tok");
-    localStorage.setItem("refresh_token", "refresh");
     localStorage.setItem("token_expires_at", String(Date.now() - 1000));
+
+    const { isTokenExpiringSoon, refreshSession } =
+      await import("../../api/auth");
+    vi.mocked(isTokenExpiringSoon).mockReturnValue(true);
+    vi.mocked(refreshSession).mockImplementation(() => {
+      throw new Error("sync fail"); // Synchronous throw = immediate catch
+    });
 
     const { syncUser } = await import("../../api/users");
     vi.mocked(syncUser).mockResolvedValue({
