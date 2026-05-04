@@ -6,17 +6,25 @@ const mockResponseUse = vi.fn();
 
 vi.mock("axios", () => ({
   default: {
-    create: vi.fn(() => ({
-      interceptors: {
-        request: { use: mockRequestUse },
-        response: { use: mockResponseUse },
-      },
-      defaults: { headers: {} },
-      get: vi.fn(),
-      post: vi.fn(),
-      patch: vi.fn(),
-      delete: vi.fn(),
-    })),
+    create: vi.fn(() => {
+      const instance = {
+        interceptors: {
+          request: { use: mockRequestUse },
+          response: { use: mockResponseUse },
+        },
+        defaults: { headers: {} },
+        get: vi.fn(),
+        post: vi.fn(),
+        patch: vi.fn(),
+        delete: vi.fn(),
+      };
+      // Make the instance callable for request retries
+      const callable = vi.fn((config: unknown) =>
+        Promise.resolve({ data: {}, headers: {}, config }),
+      );
+      Object.assign(callable, instance);
+      return callable;
+    }),
   },
 }));
 
