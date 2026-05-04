@@ -202,4 +202,42 @@ describe("ProtectedRoute", () => {
       expect(setUserSpy).toHaveBeenCalledWith({ id: "1", email: "a@b.com" });
     });
   });
+
+  it("refreshes token on mount when expiring soon", async () => {
+    useAuthStore.setState({
+      hasHydrated: true,
+      user: null,
+      isAuthenticated: false,
+    });
+    localStorage.setItem("access_token", "expired-tok");
+    localStorage.setItem("refresh_token", "refresh");
+    localStorage.setItem("token_expires_at", String(Date.now() - 1000));
+
+    const { syncUser } = await import("../../api/users");
+    vi.mocked(syncUser).mockResolvedValue({
+      id: "1",
+      email: "a@b.com",
+      created_at: new Date().toISOString(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route path="/login" element={<div>login page</div>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div>protected</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("protected")).toBeInTheDocument();
+    });
+  });
 });

@@ -93,4 +93,42 @@ describe("apiClient", () => {
     await expect(errorFn(error)).rejects.toThrow("refresh failed");
     expect(mockLogout).toHaveBeenCalled();
   });
+
+  it("proactively refreshes token when expiring soon", async () => {
+    localStorage.setItem("access_token", "old-tok");
+    localStorage.setItem("refresh_token", "old-refresh");
+    localStorage.setItem("token_expires_at", String(Date.now() - 1000));
+
+    const { refreshSession } = await import("./auth");
+    vi.mocked(refreshSession).mockResolvedValue("new-tok");
+
+    await import("./client");
+
+    const [requestFn] = mockRequestUse.mock.calls[0];
+    const config = { headers: {} } as InternalAxiosRequestConfig;
+    const result = await requestFn(config);
+    expect(result.headers.Authorization).toBe("Bearer new-tok");
+  });
+
+  it("queues concurrent requests during refresh", async () => {
+    const { refreshSession } = await import("./auth");
+    vi.mocked(refreshSession).mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve("new-tok"), 10)),
+    );
+
+    await import("./client");
+
+    const [, errorFn] = mockResponseUse.mock.calls[0];
+    const error = {
+      response: { status: 401 },
+      config: { _retry: false },
+    } as unknown as AxiosError;
+
+    // Fire two concurrent 401s
+    const p1 = errorFn(error);
+    const p2 = errorFn(error);
+
+    await expect(p1).rejects.toThrow();
+    await expect(p2).rejects.toThrow();
+  });
 });

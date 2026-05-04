@@ -218,4 +218,12 @@ describe("auth API", () => {
       "No refresh token available",
     );
   });
+
+  it("isTokenExpiringSoon returns false when token is not near expiry", () => {
+    localStorage.setItem(
+      "token_expires_at",
+      String(Date.now() + 10 * 60 * 1000),
+    ); // 10 min left, buffer is 5 min
+    expect(isTokenExpiringSoon()).toBe(false);
+  });
 });
