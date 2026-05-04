@@ -90,7 +90,7 @@ describe("apiClient", () => {
       config: { _retry: false },
     } as unknown as AxiosError;
 
-    await expect(errorFn(error)).rejects.toEqual(error);
+    await expect(errorFn(error)).rejects.toThrow("refresh failed");
     expect(mockLogout).toHaveBeenCalled();
   });
 });
