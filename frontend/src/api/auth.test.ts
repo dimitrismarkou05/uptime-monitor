@@ -7,6 +7,9 @@ import {
   updatePassword,
   requestPasswordReset,
   getToken,
+  getRefreshToken,
+  isTokenExpiringSoon,
+  refreshSession,
 } from "./auth";
 
 const mockSignIn = vi.fn();
@@ -14,6 +17,7 @@ const mockSignUp = vi.fn();
 const mockSignOut = vi.fn();
 const mockUpdateUser = vi.fn();
 const mockResetPassword = vi.fn();
+const mockRefreshSession = vi.fn();
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(() => ({
@@ -23,6 +27,7 @@ vi.mock("@supabase/supabase-js", () => ({
       signOut: (...args: unknown[]) => mockSignOut(...args),
       updateUser: (...args: unknown[]) => mockUpdateUser(...args),
       resetPasswordForEmail: (...args: unknown[]) => mockResetPassword(...args),
+      refreshSession: (...args: unknown[]) => mockRefreshSession(...args),
     },
   })),
 }));
@@ -33,14 +38,23 @@ describe("auth API", () => {
     localStorage.clear();
   });
 
-  it("signIn stores token and returns user", async () => {
+  it("signIn stores token and refresh token", async () => {
     mockSignIn.mockResolvedValue({
-      data: { session: { access_token: "tok" }, user: { id: "1" } },
+      data: {
+        session: {
+          access_token: "tok",
+          refresh_token: "refresh",
+          expires_in: 3600,
+        },
+        user: { id: "1" },
+      },
       error: null,
     });
     const user = await signIn("a@b.com", "pass");
     expect(user).toEqual({ id: "1" });
     expect(localStorage.getItem("access_token")).toBe("tok");
+    expect(localStorage.getItem("refresh_token")).toBe("refresh");
+    expect(localStorage.getItem("token_expires_at")).toBeTruthy();
   });
 
   it("signIn throws on error", async () => {
@@ -51,28 +65,40 @@ describe("auth API", () => {
     await expect(signIn("a@b.com", "pass")).rejects.toThrow("bad creds");
   });
 
-  it("signUp returns user", async () => {
+  it("signUp returns user and stores session", async () => {
     mockSignUp.mockResolvedValue({
-      data: { user: { id: "1" } },
+      data: {
+        user: { id: "1" },
+        session: {
+          access_token: "tok",
+          refresh_token: "refresh",
+          expires_in: 3600,
+        },
+      },
       error: null,
     });
     const user = await signUp("a@b.com", "pass");
     expect(user).toEqual({ id: "1" });
+    expect(getRefreshToken()).toBe("refresh");
   });
 
   it("signUp throws on error", async () => {
     mockSignUp.mockResolvedValue({
-      data: { user: null },
+      data: { user: null, session: null },
       error: new Error("exists"),
     });
     await expect(signUp("a@b.com", "pass")).rejects.toThrow("exists");
   });
 
-  it("signOut clears token", async () => {
+  it("signOut clears all tokens", async () => {
     localStorage.setItem("access_token", "tok");
+    localStorage.setItem("refresh_token", "ref");
+    localStorage.setItem("token_expires_at", "1234567890");
     mockSignOut.mockResolvedValue({ error: null });
     await signOut();
     expect(localStorage.getItem("access_token")).toBeNull();
+    expect(localStorage.getItem("refresh_token")).toBeNull();
+    expect(localStorage.getItem("token_expires_at")).toBeNull();
   });
 
   it("updateEmail delegates to supabase", async () => {
@@ -131,7 +157,65 @@ describe("auth API", () => {
   });
 
   it("getToken returns null when no token", () => {
-    localStorage.removeItem("access_token");
     expect(getToken()).toBeNull();
+  });
+
+  it("getRefreshToken reads from localStorage", () => {
+    localStorage.setItem("refresh_token", "ref");
+    expect(getRefreshToken()).toBe("ref");
+  });
+
+  it("isTokenExpiringSoon returns false when no expiry", () => {
+    expect(isTokenExpiringSoon()).toBe(false);
+  });
+
+  it("isTokenExpiringSoon returns true when token is expired", () => {
+    localStorage.setItem("token_expires_at", String(Date.now() - 1000));
+    expect(isTokenExpiringSoon()).toBe(true);
+  });
+
+  it("isTokenExpiringSoon returns true when within buffer", () => {
+    localStorage.setItem(
+      "token_expires_at",
+      String(Date.now() + 2 * 60 * 1000),
+    ); // 2 min left
+    expect(isTokenExpiringSoon()).toBe(true);
+  });
+
+  it("refreshSession updates tokens on success", async () => {
+    localStorage.setItem("refresh_token", "old-refresh");
+    mockRefreshSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "new-tok",
+          refresh_token: "new-refresh",
+          expires_in: 3600,
+        },
+      },
+      error: null,
+    });
+
+    const token = await refreshSession();
+    expect(token).toBe("new-tok");
+    expect(localStorage.getItem("access_token")).toBe("new-tok");
+    expect(localStorage.getItem("refresh_token")).toBe("new-refresh");
+  });
+
+  it("refreshSession clears session and throws on failure", async () => {
+    localStorage.setItem("refresh_token", "old-refresh");
+    localStorage.setItem("access_token", "old-tok");
+    mockRefreshSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: "Invalid refresh token" },
+    });
+
+    await expect(refreshSession()).rejects.toThrow("Session refresh failed");
+    expect(localStorage.getItem("access_token")).toBeNull();
+  });
+
+  it("refreshSession throws when no refresh token exists", async () => {
+    await expect(refreshSession()).rejects.toThrow(
+      "No refresh token available",
+    );
   });
 });

@@ -20,6 +20,8 @@ export const useAuthStore = create<AuthState>()(
       setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
       logout: () => {
         localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("token_expires_at");
         set({ user: null, isAuthenticated: false });
       },
     }),

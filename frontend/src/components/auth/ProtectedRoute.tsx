@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import { syncUser } from "../../api/users";
+import { isTokenExpiringSoon, refreshSession } from "../../api/auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,8 +24,18 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       return;
     }
 
+    // Proactive refresh on route entry if token is expiring soon
+    if (isTokenExpiringSoon() && !user) {
+      (async () => {
+        try {
+          await refreshSession();
+        } catch {
+          // Fall through to syncUser / logout below
+        }
+      })();
+    }
+
     if (!user) {
-      // Async IIFE — setState only happens in .then()/.catch() callbacks
       (async () => {
         try {
           const syncedUser = await syncUser();
