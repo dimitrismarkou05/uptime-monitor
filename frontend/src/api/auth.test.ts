@@ -209,7 +209,7 @@ describe("auth API", () => {
       error: { message: "Invalid refresh token" },
     });
 
-    await expect(refreshSession()).rejects.toThrow("Session refresh failed");
+    await expect(refreshSession()).rejects.toThrow("Invalid refresh token");
     expect(localStorage.getItem("access_token")).toBeNull();
   });
 
