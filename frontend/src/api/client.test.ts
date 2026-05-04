@@ -35,6 +35,11 @@ vi.mock("../stores/authStore", () => ({
   },
 }));
 
+vi.mock("./auth", () => ({
+  isTokenExpiringSoon: vi.fn(() => false),
+  refreshSession: vi.fn(),
+}));
+
 describe("apiClient", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -50,7 +55,7 @@ describe("apiClient", () => {
 
     const [requestFn] = mockRequestUse.mock.calls[0];
     const config = { headers: {} } as InternalAxiosRequestConfig;
-    const result = requestFn(config);
+    const result = await requestFn(config);
     expect(result.headers.Authorization).toBe("Bearer tok123");
   });
 
@@ -59,11 +64,11 @@ describe("apiClient", () => {
 
     const [requestFn] = mockRequestUse.mock.calls[0];
     const config = { headers: {} } as InternalAxiosRequestConfig;
-    const result = requestFn(config);
+    const result = await requestFn(config);
     expect(result.headers.Authorization).toBeUndefined();
   });
 
-  it("response interceptor triggers logout on 401", async () => {
+  it("response interceptor triggers logout on 401 when refresh fails", async () => {
     const { useAuthStore } = await import("../stores/authStore");
     vi.mocked(useAuthStore.getState).mockReturnValue({
       user: null,
@@ -74,10 +79,16 @@ describe("apiClient", () => {
       logout: mockLogout,
     });
 
+    const { refreshSession } = await import("./auth");
+    vi.mocked(refreshSession).mockRejectedValue(new Error("refresh failed"));
+
     await import("./client");
 
     const [, errorFn] = mockResponseUse.mock.calls[0];
-    const error = { response: { status: 401 } } as AxiosError;
+    const error = {
+      response: { status: 401 },
+      config: { _retry: false },
+    } as unknown as AxiosError;
 
     await expect(errorFn(error)).rejects.toEqual(error);
     expect(mockLogout).toHaveBeenCalled();
