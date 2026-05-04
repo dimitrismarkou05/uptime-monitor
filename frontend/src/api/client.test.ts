@@ -296,4 +296,24 @@ describe("apiClient", () => {
     const result = await errorFn(error);
     expect(result.data.ok).toBe(true);
   });
+
+  it("skips refresh when request already has _retry flag", async () => {
+    // Ensure the interceptor is set up
+    await import("./client");
+
+    // Get the registered error handler (second callback)
+    const [, errorFn] = mockResponseUse.mock.calls[0];
+
+    const error = {
+      response: { status: 401 },
+      config: { _retry: true, headers: {} },
+    } as unknown as AxiosError;
+
+    // The interceptor should immediately reject (no refresh)
+    await expect(errorFn(error)).rejects.toEqual(error);
+
+    // Confirm refresh was never attempted
+    const { refreshSession } = await import("./auth");
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
 });

@@ -256,4 +256,52 @@ describe("ProtectedRoute", () => {
       expect(screen.getByText("protected")).toBeInTheDocument();
     });
   });
+
+  it("renders children when proactive refresh succeeds", async () => {
+    useAuthStore.setState({
+      hasHydrated: true,
+      user: null,
+      isAuthenticated: false,
+    });
+    localStorage.setItem("access_token", "expiring-tok");
+    // token expiring within the buffer → isTokenExpiringSoon returns true
+    localStorage.setItem(
+      "token_expires_at",
+      String(Date.now() + 2 * 60 * 1000), // 2 minutes left
+    );
+
+    const { isTokenExpiringSoon, refreshSession } =
+      await import("../../api/auth");
+    vi.mocked(isTokenExpiringSoon).mockReturnValue(true);
+    vi.mocked(refreshSession).mockResolvedValue("fresh-token"); // success!
+
+    const { syncUser } = await import("../../api/users");
+    vi.mocked(syncUser).mockResolvedValue({
+      id: "1",
+      email: "a@b.com",
+      created_at: new Date().toISOString(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route path="/login" element={<div>login page</div>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div>protected content</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("protected content")).toBeInTheDocument();
+    });
+
+    expect(refreshSession).toHaveBeenCalled();
+  });
 });
