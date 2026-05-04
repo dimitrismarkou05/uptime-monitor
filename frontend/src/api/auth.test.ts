@@ -82,6 +82,18 @@ describe("auth API", () => {
     expect(getRefreshToken()).toBe("refresh");
   });
 
+  it("signUp returns user without session", async () => {
+    mockSignUp.mockResolvedValue({
+      data: {
+        user: { id: "1" },
+        session: null,
+      },
+      error: null,
+    });
+    const user = await signUp("a@b.com", "pass");
+    expect(user).toEqual({ id: "1" });
+    expect(getRefreshToken()).toBeNull();
+  });
   it("signUp throws on error", async () => {
     mockSignUp.mockResolvedValue({
       data: { user: null, session: null },

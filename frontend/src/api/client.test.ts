@@ -243,6 +243,32 @@ describe("apiClient", () => {
     await expect(errorFn(error)).rejects.toEqual(error);
   });
 
+  it("handles empty token from refresh by falling back to queued reject", async () => {
+    const { refreshSession } = await import("./auth");
+    vi.mocked(refreshSession).mockResolvedValue("");
+
+    const { useAuthStore } = await import("../stores/authStore");
+    vi.mocked(useAuthStore.getState).mockReturnValue({
+      user: null,
+      isAuthenticated: false,
+      hasHydrated: true,
+      setUser: vi.fn(),
+      setHasHydrated: vi.fn(),
+      logout: mockLogout,
+    });
+
+    await import("./client");
+
+    const [, errorFn] = mockResponseUse.mock.calls[0];
+    const error = {
+      response: { status: 401 },
+      config: { _retry: false, headers: {} },
+    } as unknown as AxiosError;
+
+    await expect(errorFn(error)).rejects.toThrow();
+    expect(mockLogout).toHaveBeenCalled();
+  });
+
   it("passes successful responses through", async () => {
     await import("./client");
 
