@@ -37,7 +37,8 @@ apiClient.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${newToken}`;
       return config;
     } catch {
-      // Let the request proceed with old token; response interceptor will handle 401
+      // Proactive refresh failed; let response interceptor handle 401
+      void 0;
     }
   }
 

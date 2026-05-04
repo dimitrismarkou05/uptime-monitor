@@ -238,4 +238,15 @@ describe("auth API", () => {
     ); // 10 min left, buffer is 5 min
     expect(isTokenExpiringSoon()).toBe(false);
   });
+
+  it("refreshSession throws default message when error has empty message", async () => {
+    localStorage.setItem("refresh_token", "old-refresh");
+    mockRefreshSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: "" }, // Empty string triggers fallback
+    });
+
+    await expect(refreshSession()).rejects.toThrow("Session refresh failed");
+    expect(localStorage.getItem("access_token")).toBeNull();
+  });
 });
