@@ -91,7 +91,7 @@ describe("apiClient", () => {
     const [, errorFn] = mockResponseUse.mock.calls[0];
     const error = {
       response: { status: 401 },
-      config: { _retry: false },
+      config: { _retry: false, headers: {} },
     } as unknown as AxiosError;
 
     await expect(errorFn(error)).rejects.toThrow("refresh failed");
@@ -99,6 +99,7 @@ describe("apiClient", () => {
   });
 
   it("proactively refreshes token when expiring soon", async () => {
+    localStorage.setItem("access_token", "expired-tok");
     const { isTokenExpiringSoon, refreshSession } = await import("./auth");
     vi.mocked(isTokenExpiringSoon).mockReturnValue(true);
     vi.mocked(refreshSession).mockResolvedValue("new-tok");
@@ -124,13 +125,18 @@ describe("apiClient", () => {
     await import("./client");
 
     const [, errorFn] = mockResponseUse.mock.calls[0];
-    const error = {
+    // Use separate error objects to avoid shared mutation of _retry flag
+    const error1 = {
       response: { status: 401 },
-      config: { _retry: false },
+      config: { _retry: false, headers: {} },
+    } as unknown as AxiosError;
+    const error2 = {
+      response: { status: 401 },
+      config: { _retry: false, headers: {} },
     } as unknown as AxiosError;
 
-    const p1 = errorFn(error);
-    const p2 = errorFn(error);
+    const p1 = errorFn(error1);
+    const p2 = errorFn(error2);
 
     resolveRefresh!("new-tok");
 
