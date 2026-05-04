@@ -120,6 +120,23 @@ describe("apiClient", () => {
     expect(result.headers.Authorization).toBe("Bearer new-tok");
   });
 
+  it("skips proactive refresh for auth endpoints", async () => {
+    localStorage.setItem("access_token", "expired-tok");
+    const { isTokenExpiringSoon } = await import("./auth");
+    vi.mocked(isTokenExpiringSoon).mockReturnValue(true);
+
+    await import("./client");
+
+    const [requestFn] = mockRequestUse.mock.calls[0];
+    const config = {
+      headers: {},
+      url: "/auth/refresh",
+    } as InternalAxiosRequestConfig;
+    const result = await requestFn(config);
+    // Should attach old token, not try proactive refresh
+    expect(result.headers.Authorization).toBe("Bearer expired-tok");
+  });
+
   it("falls through to old token when proactive refresh throws", async () => {
     localStorage.setItem("access_token", "old-tok");
     const { isTokenExpiringSoon, refreshSession } = await import("./auth");
@@ -224,5 +241,13 @@ describe("apiClient", () => {
     } as unknown as AxiosError;
 
     await expect(errorFn(error)).rejects.toEqual(error);
+  });
+
+  it("passes successful responses through", async () => {
+    await import("./client");
+
+    const [, , successFn] = mockResponseUse.mock.calls[0];
+    const response = { data: { ok: true }, status: 200 };
+    expect(successFn(response)).toBe(response);
   });
 });
