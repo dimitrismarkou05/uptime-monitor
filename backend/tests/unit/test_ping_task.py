@@ -10,9 +10,8 @@ class TestPingTask:
     @patch("app.tasks.ping.SyncSessionLocal")
     @patch("app.tasks.ping.AlertService")
     @patch("app.tasks.ping.PingService")
-    @patch("app.tasks.ping.MonitorService")
     def test_ping_url_success(
-        self, mock_mon_svc, mock_ping_svc, mock_alert_svc, mock_session
+        self, mock_ping_svc, mock_alert_svc, mock_session
     ):
         mock_db = MagicMock()
         mock_session.return_value.__enter__ = MagicMock(return_value=mock_db)
@@ -25,10 +24,6 @@ class TestPingTask:
         }
         mock_ping_svc.return_value = mock_ping
 
-        mock_monitor = MagicMock()
-        mock_monitor.interval_seconds = 300
-        mock_db.get.return_value = mock_monitor
-
         monitor_id = str(uuid4())
         result = ping_url.run(monitor_id, "https://example.com")
 
@@ -36,4 +31,5 @@ class TestPingTask:
         mock_ping.process_monitor_check.assert_called_once_with(
             monitor_id, "https://example.com", mock_db
         )
-        mock_db.commit.assert_called_once()
+        # next_check_at is now handled by the scheduler, not the ping task
+        mock_db.commit.assert_not_called()

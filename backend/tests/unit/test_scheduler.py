@@ -31,8 +31,8 @@ class TestDispatchChecks:
         dispatch_checks.run()
 
         mock_ping.delay.assert_called_once_with(str(monitor.id), str(monitor.url))
-        # Scheduler is read-only now; worker handles next_check_at & commit
-        mock_db.commit.assert_not_called()
+        # Scheduler now commits to release SELECT FOR UPDATE row locks
+        mock_db.commit.assert_called_once()
 
     @patch("app.tasks.scheduler.ping_url")
     @patch("app.tasks.scheduler.SyncSessionLocal")
