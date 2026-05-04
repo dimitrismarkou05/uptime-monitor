@@ -35,10 +35,14 @@ vi.mock("../stores/authStore", () => ({
   },
 }));
 
-vi.mock("./auth", () => ({
-  isTokenExpiringSoon: vi.fn(() => false),
-  refreshSession: vi.fn(),
-}));
+vi.mock("./auth", async () => {
+  const actual = await vi.importActual<typeof import("./auth")>("./auth");
+  return {
+    ...actual,
+    isTokenExpiringSoon: vi.fn(() => false),
+    refreshSession: vi.fn(),
+  };
+});
 
 describe("apiClient", () => {
   beforeEach(() => {
@@ -95,11 +99,8 @@ describe("apiClient", () => {
   });
 
   it("proactively refreshes token when expiring soon", async () => {
-    localStorage.setItem("access_token", "old-tok");
-    localStorage.setItem("refresh_token", "old-refresh");
-    localStorage.setItem("token_expires_at", String(Date.now() - 1000));
-
-    const { refreshSession } = await import("./auth");
+    const { isTokenExpiringSoon, refreshSession } = await import("./auth");
+    vi.mocked(isTokenExpiringSoon).mockReturnValue(true);
     vi.mocked(refreshSession).mockResolvedValue("new-tok");
 
     await import("./client");
@@ -112,8 +113,12 @@ describe("apiClient", () => {
 
   it("queues concurrent requests during refresh", async () => {
     const { refreshSession } = await import("./auth");
+    let resolveRefresh: (value: string) => void;
     vi.mocked(refreshSession).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve("new-tok"), 10)),
+      () =>
+        new Promise((resolve) => {
+          resolveRefresh = resolve;
+        }),
     );
 
     await import("./client");
@@ -124,11 +129,14 @@ describe("apiClient", () => {
       config: { _retry: false },
     } as unknown as AxiosError;
 
-    // Fire two concurrent 401s
     const p1 = errorFn(error);
     const p2 = errorFn(error);
 
-    await expect(p1).rejects.toThrow();
-    await expect(p2).rejects.toThrow();
+    resolveRefresh!("new-tok");
+
+    const r1 = await p1;
+    const r2 = await p2;
+    expect(r1.headers.Authorization).toBe("Bearer new-tok");
+    expect(r2.headers.Authorization).toBe("Bearer new-tok");
   });
 });
