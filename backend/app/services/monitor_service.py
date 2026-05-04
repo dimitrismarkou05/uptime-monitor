@@ -23,11 +23,13 @@ class MonitorService:
         self.db = db
 
     async def create(self, user_id: UUID, data: MonitorCreate) -> Monitor:
+        # Set next_check_at to now so the scheduler picks it up immediately
         monitor = Monitor(
             user_id=user_id,
             url=str(data.url),
             interval_seconds=data.interval_seconds,
             is_active=data.is_active,
+            next_check_at=datetime.now(timezone.utc),  # ← Run immediately
         )
         self.db.add(monitor)
         await self.db.commit()
@@ -88,15 +90,19 @@ class MonitorService:
         """
         Synchronous version for Celery scheduler.
         Returns monitors that are active and due for a check.
+        Uses SELECT FOR UPDATE SKIP LOCKED to prevent race conditions
+        where concurrent dispatchers see the same due monitors.
         """
         if now is None:
             now = datetime.now(timezone.utc)
 
         result = db_session.execute(
-            select(Monitor).where(
+            select(Monitor)
+            .where(
                 Monitor.is_active == True,
                 (Monitor.next_check_at <= now) | (Monitor.next_check_at.is_(None)),
             )
+            .with_for_update(skip_locked=True)  # ← Lock and skip if another dispatcher has it
         )
         return result.scalars().all()
 

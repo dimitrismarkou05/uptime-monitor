@@ -10,6 +10,26 @@ class PingService:
 
     DEFAULT_TIMEOUT = 10.0
 
+    # Browser-like headers to avoid bot detection
+    _HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept": (
+            "text/html,application/xhtml+xml,application/xml;"
+            "q=0.9,image/avif,image/webp,*/*;q=0.8"
+        ),
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
+    }
+
     def __init__(self, alert_service: Optional[AlertService] = None):
         self.alert_service = alert_service
 
@@ -28,10 +48,7 @@ class PingService:
             with httpx.Client(
                 timeout=self.DEFAULT_TIMEOUT,
                 follow_redirects=True,
-                headers={
-                    "User-Agent": "UptimeMonitor/1.0",
-                    "Accept-Encoding": "identity",
-                    },
+                headers=self._HEADERS,
             ) as client:
                 response = client.get(url)
                 status_code = response.status_code
