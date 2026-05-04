@@ -120,6 +120,21 @@ describe("apiClient", () => {
     expect(result.headers.Authorization).toBe("Bearer new-tok");
   });
 
+  it("falls through to old token when proactive refresh throws", async () => {
+    localStorage.setItem("access_token", "old-tok");
+    const { isTokenExpiringSoon, refreshSession } = await import("./auth");
+    vi.mocked(isTokenExpiringSoon).mockReturnValue(true);
+    vi.mocked(refreshSession).mockRejectedValue(new Error("refresh failed"));
+
+    await import("./client");
+
+    const [requestFn] = mockRequestUse.mock.calls[0];
+    const config = { headers: {} } as InternalAxiosRequestConfig;
+    const result = await requestFn(config);
+    // Should still attach the old token when proactive refresh fails
+    expect(result.headers.Authorization).toBe("Bearer old-tok");
+  });
+
   it("queues concurrent requests during refresh", async () => {
     const { refreshSession } = await import("./auth");
     let resolveRefresh: (value: string) => void;
@@ -163,5 +178,51 @@ describe("apiClient", () => {
     };
     expect(retried1.headers.Authorization).toBe("Bearer new-tok");
     expect(retried2.headers.Authorization).toBe("Bearer new-tok");
+  });
+
+  it("rejects queued request when refresh fails", async () => {
+    const { refreshSession } = await import("./auth");
+    vi.mocked(refreshSession).mockRejectedValue(new Error("refresh failed"));
+
+    const { useAuthStore } = await import("../stores/authStore");
+    vi.mocked(useAuthStore.getState).mockReturnValue({
+      user: null,
+      isAuthenticated: false,
+      hasHydrated: true,
+      setUser: vi.fn(),
+      setHasHydrated: vi.fn(),
+      logout: mockLogout,
+    });
+
+    await import("./client");
+
+    const [, errorFn] = mockResponseUse.mock.calls[0];
+    const error1 = {
+      response: { status: 401 },
+      config: { _retry: false, headers: {} },
+    } as unknown as AxiosError;
+    const error2 = {
+      response: { status: 401 },
+      config: { _retry: false, headers: {} },
+    } as unknown as AxiosError;
+
+    const p1 = errorFn(error1);
+    const p2 = errorFn(error2);
+
+    await expect(p1).rejects.toThrow("refresh failed");
+    await expect(p2).rejects.toThrow("refresh failed");
+    expect(mockLogout).toHaveBeenCalled();
+  });
+
+  it("passes through non-401 errors without refresh", async () => {
+    await import("./client");
+
+    const [, errorFn] = mockResponseUse.mock.calls[0];
+    const error = {
+      response: { status: 500 },
+      config: { headers: {} },
+    } as unknown as AxiosError;
+
+    await expect(errorFn(error)).rejects.toEqual(error);
   });
 });
