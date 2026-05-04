@@ -12,7 +12,7 @@ This project demonstrates production‑grade architecture patterns, async proces
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 > ![Dashboard](/docs/screenshots/dashboard.png)
 
@@ -22,7 +22,7 @@ This project demonstrates production‑grade architecture patterns, async proces
 
 ---
 
-## 🧠 Architecture & Techniques
+## Architecture & Techniques
 
 This project is structured as a **distributed, event‑driven backend** with a **modern React SPA**. Key design decisions and patterns:
 
@@ -40,7 +40,7 @@ This project is structured as a **distributed, event‑driven backend** with a *
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 | Layer            | Technologies                                                                              |
 | ---------------- | ----------------------------------------------------------------------------------------- |
@@ -55,7 +55,7 @@ This project is structured as a **distributed, event‑driven backend** with a *
 
 ---
 
-## 🚀 Getting Started (Local Setup)
+## Getting Started (Local Setup)
 
 ### Prerequisites
 
@@ -131,7 +131,7 @@ The frontend runs at **http://localhost:5173**. Backend API is at **http://local
 
 ---
 
-## 📟 Running the Application Locally
+## Running the Application Locally
 
 ### Docker / Backend
 
@@ -199,7 +199,7 @@ celery -A celery_beat beat -l info
 
 ---
 
-## 💡 Code Highlights
+## Code Highlights
 
 ### 1. Race‑Condition‑Safe Task Dispatch
 
@@ -241,7 +241,7 @@ async def verify_token(token: str) -> dict:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License – see the [LICENSE](#license) section below.
 
