@@ -31,6 +31,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
           await refreshSession();
         } catch {
           // Fall through to syncUser / logout below
+          void 0;
         }
       })();
     }
