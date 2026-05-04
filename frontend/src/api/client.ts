@@ -77,6 +77,9 @@ apiClient.interceptors.response.use(
       try {
         refreshPromise = refreshSession();
         const newToken = await refreshPromise;
+        if (!newToken) {
+          throw new Error("Session refresh returned empty token");
+        }
         processQueue(null, newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);

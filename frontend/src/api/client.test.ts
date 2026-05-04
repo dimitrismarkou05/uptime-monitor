@@ -265,7 +265,9 @@ describe("apiClient", () => {
       config: { _retry: false, headers: {} },
     } as unknown as AxiosError;
 
-    await expect(errorFn(error)).rejects.toThrow();
+    await expect(errorFn(error)).rejects.toThrow(
+      "Session refresh returned empty token",
+    );
     expect(mockLogout).toHaveBeenCalled();
   });
 
