@@ -130,7 +130,7 @@ export default function Settings() {
                 <button
                   type="submit"
                   disabled={isLoading || email === user?.email}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                 >
                   Update Email
                 </button>
@@ -158,7 +158,7 @@ export default function Settings() {
                   <button
                     type="submit"
                     disabled={isLoading || !password}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                   >
                     Set Password
                   </button>
@@ -166,7 +166,7 @@ export default function Settings() {
                     type="button"
                     onClick={handleResetRequest}
                     disabled={isLoading}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50 cursor-pointer"
                   >
                     Send Reset Link
                   </button>
@@ -189,7 +189,7 @@ export default function Settings() {
             <button
               onClick={handleDeleteAccount}
               disabled={isDeleting}
-              className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+              className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 cursor-pointer"
             >
               {isDeleting ? "Deleting..." : "Delete Account"}
             </button>
