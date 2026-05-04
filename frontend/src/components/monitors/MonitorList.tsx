@@ -62,7 +62,7 @@ export default function MonitorList({
               <td className="px-4 py-3">
                 <button
                   onClick={() => navigate(`/monitor/${monitor.id}`)}
-                  className="text-blue-600 hover:underline text-left truncate max-w-50"
+                  className="text-blue-600 hover:underline text-left truncate max-w-50 cursor-pointer"
                 >
                   {monitor.url}
                 </button>
@@ -73,7 +73,7 @@ export default function MonitorList({
               <td className="px-4 py-3">
                 <button
                   onClick={() => onToggle(monitor.id, !monitor.is_active)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  className={`cursor-pointer relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                     monitor.is_active ? "bg-blue-600" : "bg-gray-300"
                   }`}
                 >
@@ -88,14 +88,14 @@ export default function MonitorList({
                 <div className="flex items-center justify-end gap-3">
                   <button
                     onClick={() => onEdit(monitor)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium cursor-pointer"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(monitor.id)}
                     disabled={deletingId === monitor.id}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
+                    className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50 cursor-pointer"
                   >
                     {deletingId === monitor.id ? "Deleting..." : "Delete"}
                   </button>

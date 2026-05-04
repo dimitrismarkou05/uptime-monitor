@@ -55,8 +55,6 @@ export default function Dashboard() {
     await deleteMonitor.mutateAsync(id);
   };
 
-  // We filter the current page locally. (For massive datasets, this logic
-  // should ideally be moved to backend queries, but this handles the visual state).
   const filteredMonitors = monitors?.filter((m) => {
     const matchesSearch = m.url
       .toLowerCase()
@@ -87,7 +85,7 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer"
           >
             + Add Monitor
           </button>
@@ -146,7 +144,7 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setStatusFilter(e.target.value as "ALL" | "UP" | "DOWN")
                 }
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="UP">Up Only</option>
@@ -166,7 +164,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-gray-50"
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 enabled:hover:bg-gray-100 enabled:cursor-pointer cursor-default transition-colors"
               >
                 Previous
               </button>
@@ -174,7 +172,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!monitors || monitors.length < PAGE_SIZE}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-gray-50"
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 enabled:hover:bg-gray-100 enabled:cursor-pointer cursor-default transition-colors"
               >
                 Next
               </button>

@@ -46,7 +46,7 @@ export default function MonitorDetail() {
           <div>
             <button
               onClick={() => navigate("/dashboard")}
-              className="text-sm text-gray-500 hover:text-gray-700 mb-2"
+              className="text-sm text-gray-500 hover:text-gray-700 mb-2 cursor-pointer"
             >
               ← Back
             </button>
