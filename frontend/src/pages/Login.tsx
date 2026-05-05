@@ -69,7 +69,7 @@ export default function Login() {
                 setIsSignUp(!isSignUp);
                 setError("");
               }}
-              className="font-medium text-blue-600 hover:text-blue-500"
+              className="cursor-pointer font-medium text-blue-600 hover:text-blue-500"
             >
               {isSignUp ? "Sign in" : "Sign up"}
             </button>
@@ -122,7 +122,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className={`group relative flex w-full justify-center rounded-md border border-transparent py-2 px-4 text-sm font-medium text-white transition-colors
+              className={`cursor-pointer group relative flex w-full justify-center rounded-md border border-transparent py-2 px-4 text-sm font-medium text-white transition-colors
                 ${isLoading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"}
               `}
             >
