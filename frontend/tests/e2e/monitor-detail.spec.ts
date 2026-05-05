@@ -14,6 +14,21 @@ test.describe("Monitor Detail", () => {
       });
     });
 
+    const mockMonitors = [
+      {
+        id: "mon-123",
+        user_id: "test-user-id",
+        url: "https://google.com/",
+        interval_seconds: 300,
+        is_active: true,
+        alert_status: "UP",
+        last_alerted_at: null,
+        next_check_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
     await page.route(
       (url) => url.pathname === "/api/v1/monitors/",
       async (route) => {
@@ -21,20 +36,10 @@ test.describe("Monitor Detail", () => {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
-            body: JSON.stringify([
-              {
-                id: "mon-123",
-                user_id: "test-user-id",
-                url: "https://google.com/",
-                interval_seconds: 300,
-                is_active: true,
-                alert_status: "UP",
-                last_alerted_at: null,
-                next_check_at: null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              },
-            ]),
+            body: JSON.stringify({
+              items: mockMonitors,
+              total: mockMonitors.length,
+            }),
           });
         } else {
           await route.fallback();
@@ -46,18 +51,7 @@ test.describe("Monitor Detail", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          id: "mon-123",
-          user_id: "test-user-id",
-          url: "https://google.com/",
-          interval_seconds: 300,
-          is_active: true,
-          alert_status: "UP",
-          last_alerted_at: null,
-          next_check_at: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }),
+        body: JSON.stringify(mockMonitors[0]),
       });
     });
 

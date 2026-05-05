@@ -12,50 +12,56 @@ test("shows aggregate stats on dashboard", async ({ page }) => {
     });
   });
 
+  const mockMonitors = [
+    {
+      id: "1",
+      user_id: "test-user-id",
+      url: "https://up1.com/",
+      interval_seconds: 300,
+      is_active: true,
+      alert_status: "UP",
+      last_alerted_at: null,
+      next_check_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: "2",
+      user_id: "test-user-id",
+      url: "https://up2.com/",
+      interval_seconds: 300,
+      is_active: true,
+      alert_status: "UP",
+      last_alerted_at: null,
+      next_check_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: "3",
+      user_id: "test-user-id",
+      url: "https://down.com/",
+      interval_seconds: 300,
+      is_active: true,
+      alert_status: "DOWN",
+      last_alerted_at: null,
+      next_check_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ];
+
   await page.route(
     (url) => url.pathname === "/api/v1/monitors/",
     async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({
           status: 200,
-          body: JSON.stringify([
-            {
-              id: "1",
-              user_id: "test-user-id",
-              url: "https://up1.com/",
-              interval_seconds: 300,
-              is_active: true,
-              alert_status: "UP",
-              last_alerted_at: null,
-              next_check_at: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: "2",
-              user_id: "test-user-id",
-              url: "https://up2.com/",
-              interval_seconds: 300,
-              is_active: true,
-              alert_status: "UP",
-              last_alerted_at: null,
-              next_check_at: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: "3",
-              user_id: "test-user-id",
-              url: "https://down.com/",
-              interval_seconds: 300,
-              is_active: true,
-              alert_status: "DOWN",
-              last_alerted_at: null,
-              next_check_at: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ]),
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: mockMonitors,
+            total: mockMonitors.length,
+          }),
         });
       }
     },

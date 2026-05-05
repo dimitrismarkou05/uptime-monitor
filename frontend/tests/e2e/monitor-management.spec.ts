@@ -44,7 +44,10 @@ test.describe("Monitor Management", () => {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
-            body: JSON.stringify(monitors),
+            body: JSON.stringify({
+              items: monitors,
+              total: monitors.length,
+            }),
           });
         } else if (
           url.pathname === "/api/v1/monitors/mon-123" &&
