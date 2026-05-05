@@ -11,97 +11,10 @@ env:
 
 jobs:
   # ─────────────────────────────────────────
-  # 1. BUILD & CACHE (runs once, feeds downstream)
-  # ─────────────────────────────────────────
-  build-backend:
-    runs-on: ubuntu-latest
-    outputs:
-      pip-key: ${{ steps.pip-cache.outputs.key }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Compute pip cache key
-        id: pip-cache
-        run: |
-          KEY="${{ runner.os }}-pip-${{ hashFiles('backend/pyproject.toml', 'backend/setup.py', 'backend/setup.cfg', 'backend/requirements*.txt') }}"
-          echo "key=$KEY" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.pip-cache.outputs.key }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install backend dependencies
-        working-directory: ./backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-
-  build-frontend:
-    runs-on: ubuntu-latest
-    outputs:
-      playwright-key: ${{ steps.playwright-cache.outputs.key }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: ./frontend
-        env:
-          VITE_SUPABASE_URL: "https://mock-url.supabase.co"
-          VITE_SUPABASE_ANON_KEY: "mock-key-1234567890"
-        run: npm run build
-
-      - name: Compute Playwright cache key
-        id: playwright-cache
-        run: |
-          KEY="${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}"
-          echo "key=$KEY" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ steps.playwright-cache.outputs.key }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright browsers (cached)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        working-directory: ./frontend
-        run: npx playwright install --with-deps chromium
-
-      - name: Upload frontend build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/dist/
-          retention-days: 1
-
-  # ─────────────────────────────────────────
-  # 2. TEST JOBS (parallel, reuse cached builds)
+  # 1. BACKEND (self-contained, cached)
   # ─────────────────────────────────────────
   backend:
     runs-on: ubuntu-latest
-    needs: build-backend
     services:
       postgres:
         image: postgres:16-alpine
@@ -134,11 +47,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Restore pip cache
-        uses: actions/cache/restore@v4
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ needs.build-backend.outputs.pip-key }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/pyproject.toml', 'backend/setup.py', 'backend/setup.cfg', 'backend/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -171,9 +84,11 @@ jobs:
           name: backend-coverage
           path: backend/htmlcov/
 
+  # ─────────────────────────────────────────
+  # 2. FRONTEND UNIT (parallel, self-contained, cached)
+  # ─────────────────────────────────────────
   frontend-unit:
     runs-on: ubuntu-latest
-    needs: build-frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -198,9 +113,12 @@ jobs:
           name: frontend-coverage
           path: frontend/coverage/
 
+  # ─────────────────────────────────────────
+  # 3. FRONTEND E2E (needs backend running, everything cached in-place)
+  # ─────────────────────────────────────────
   frontend-e2e:
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend]
+    needs: [backend, frontend-unit]
     services:
       postgres:
         image: postgres:16-alpine
@@ -228,17 +146,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ── Backend setup (cached) ──
+      # ── Backend (cached, same pattern as backend job) ──
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Restore pip cache
-        uses: actions/cache/restore@v4
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ needs.build-backend.outputs.pip-key }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/pyproject.toml', 'backend/setup.py', 'backend/setup.cfg', 'backend/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -273,7 +191,7 @@ jobs:
             sleep 1
           done || (echo "Backend failed to start" && exit 1)
 
-      # ── Frontend setup (cached build + playwright) ──
+      # ── Frontend (cached node_modules + playwright + build) ──
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -285,19 +203,25 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Restore Playwright browsers
-        uses: actions/cache/restore@v4
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ needs.build-frontend.outputs.playwright-key }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
 
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/dist/
+      - name: Install Playwright browsers (if cache miss)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: ./frontend
+        env:
+          VITE_SUPABASE_URL: "https://mock-url.supabase.co"
+          VITE_SUPABASE_ANON_KEY: "mock-key-1234567890"
+        run: npm run build
 
       - name: Start frontend preview server
         working-directory: ./frontend
@@ -323,7 +247,7 @@ jobs:
           pkill -f "vite preview" || true
 
   # ─────────────────────────────────────────
-  # 3. PUBLISH REPORTS (only on main)
+  # 4. PUBLISH REPORTS
   # ─────────────────────────────────────────
   publish-reports:
     runs-on: ubuntu-latest
