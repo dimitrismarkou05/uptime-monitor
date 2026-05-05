@@ -2,6 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 
 from app.api.deps import get_db, get_current_user
 from app.core.rate_limiter import limiter
@@ -19,12 +20,13 @@ def _coerce_monitor_id(monitor_id: str) -> UUID:
         raise HTTPException(status_code=400, detail="Invalid monitor ID format")
 
 
-class PingListResponse:
-    """Simple response model for paginated pings."""
-    pass
+class PingListResponse(BaseModel):
+    """Response model for paginated pings."""
+    items: list[PingLogRead]
+    total: int
 
 
-@router.get("/monitor/{monitor_id}", response_model=dict)
+@router.get("/monitor/{monitor_id}", response_model=PingListResponse)
 @limiter.limit("60/minute")
 async def get_monitor_pings(
     request: Request,
@@ -58,12 +60,12 @@ async def get_monitor_pings(
         .offset(skip)
         .limit(limit)
     )
-    items = result.scalars().all()
+    pings = result.scalars().all()
 
-    return {
-        "items": items,
-        "total": total or 0,
-    }
+    # Convert ORM objects to Pydantic schemas
+    items = [PingLogRead.model_validate(p) for p in pings]
+
+    return PingListResponse(items=items, total=total or 0)
 
 
 @router.get("/monitor/{monitor_id}/stats")

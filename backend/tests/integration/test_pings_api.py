@@ -2,6 +2,9 @@ import pytest
 from uuid import uuid4, UUID
 
 from app.models.ping_log import PingLog
+from app.models.monitor import Monitor
+
+FIXED_USER_ID = UUID("12345678-1234-1234-1234-123456789abc")
 
 
 @pytest.mark.integration
@@ -131,15 +134,19 @@ class TestPingsAPI:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_get_monitor_stats_no_pings(self, async_client):
+    async def test_get_monitor_stats_no_pings(self, async_client, db_session):
         """Cover the None branches for avg_response_ms and zero checks."""
-        payload = {
-            "url": "https://no-pings.com",
-            "interval_seconds": 300,
-            "is_active": True,
-        }
-        create_resp = await async_client.post("/api/v1/monitors/", json=payload)
-        monitor_id = create_resp.json()["id"]
+        # Insert monitor directly to avoid rate‑limiting
+        monitor = Monitor(
+            id=uuid4(),
+            user_id=FIXED_USER_ID,  # matches the auth override in conftest.py
+            url="https://no-pings.com",
+            interval_seconds=300,
+            is_active=True,
+        )
+        db_session.add(monitor)
+        await db_session.commit()
+        monitor_id = str(monitor.id)
 
         resp = await async_client.get(f"/api/v1/pings/monitor/{monitor_id}/stats")
         assert resp.status_code == 200

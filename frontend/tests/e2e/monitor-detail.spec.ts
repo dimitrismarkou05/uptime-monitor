@@ -14,6 +14,7 @@ test.describe("Monitor Detail", () => {
       });
     });
 
+    // Correct shape for GET /api/v1/monitors/ – returning { items, total }
     await page.route(
       (url) => url.pathname === "/api/v1/monitors/",
       async (route) => {
@@ -21,20 +22,23 @@ test.describe("Monitor Detail", () => {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
-            body: JSON.stringify([
-              {
-                id: "mon-123",
-                user_id: "test-user-id",
-                url: "https://google.com/",
-                interval_seconds: 300,
-                is_active: true,
-                alert_status: "UP",
-                last_alerted_at: null,
-                next_check_at: null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              },
-            ]),
+            body: JSON.stringify({
+              items: [
+                {
+                  id: "mon-123",
+                  user_id: "test-user-id",
+                  url: "https://google.com/",
+                  interval_seconds: 300,
+                  is_active: true,
+                  alert_status: "UP",
+                  last_alerted_at: null,
+                  next_check_at: null,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                },
+              ],
+              total: 1,
+            }),
           });
         } else {
           await route.fallback();
@@ -78,7 +82,7 @@ test.describe("Monitor Detail", () => {
       },
     );
 
-    // Updated to return paginated response format
+    // Updated to return the paginated response format
     await page.route(
       "**/api/v1/pings/monitor/mon-123?skip=0&limit=10*",
       async (route) => {

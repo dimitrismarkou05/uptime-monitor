@@ -104,6 +104,24 @@ describe("MonitorDetail", () => {
     expect(screen.getByText("120ms")).toBeInTheDocument();
   });
 
+  it("shows N/A for avg response when null", () => {
+    setup();
+    vi.mocked(useMonitorStats).mockReturnValue({
+      data: {
+        total_checks: 10,
+        uptime_count: 9,
+        uptime_percent: 90,
+        avg_response_ms: null,
+        last_24h: { checks: 10, uptime_percent: 90 },
+      },
+      isLoading: false,
+    } as StatsHook);
+
+    render(<MonitorDetail />, { wrapper: Wrapper });
+
+    expect(screen.getByText("N/A")).toBeInTheDocument();
+  });
+
   it("shows not found", () => {
     vi.mocked(useMonitor).mockReturnValue({
       data: null,
@@ -163,6 +181,14 @@ describe("MonitorDetail", () => {
       isError: true,
       status: "error",
     } as unknown as ReturnType<typeof useMonitor>);
+    vi.mocked(useMonitorStats).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMonitorStats>);
+    vi.mocked(useMonitorPings).mockReturnValue({
+      data: { items: [], total: 0 },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMonitorPings>);
 
     render(<MonitorDetail />, { wrapper: Wrapper });
     expect(screen.getByText(/Monitor not found/i)).toBeInTheDocument();
@@ -263,12 +289,10 @@ describe("MonitorDetail", () => {
     expect(nextBtn).not.toBeDisabled();
     fireEvent.click(nextBtn);
 
-    // After clicking next, useMonitorPings should be called with skip=10
     expect(useMonitorPings).toHaveBeenCalledWith("1", 10, 10);
   });
 
   it("clicks previous page after navigating forward", () => {
-    // Start on page 1 (skip=10)
     vi.mocked(useMonitorPings).mockImplementation(
       (_monitorId: string, skip?: number) => {
         return {
@@ -300,14 +324,10 @@ describe("MonitorDetail", () => {
 
     render(<MonitorDetail />, { wrapper: Wrapper });
 
-    // Navigate to page 2 first
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
-
-    // Then click previous
     const prevBtn = screen.getByRole("button", { name: /previous/i });
     fireEvent.click(prevBtn);
 
-    // Should go back to page 0
     expect(useMonitorPings).toHaveBeenCalledWith("1", 0, 10);
   });
 
@@ -327,7 +347,6 @@ describe("MonitorDetail", () => {
 
     render(<MonitorDetail />, { wrapper: Wrapper });
 
-    // Should show spinner in the pings section
     const spinners = document.querySelectorAll(".animate-spin");
     expect(spinners.length).toBeGreaterThan(0);
   });
@@ -338,7 +357,6 @@ describe("MonitorDetail", () => {
 
     render(<MonitorDetail />, { wrapper: Wrapper });
 
-    // The formatted date should include seconds (37)
     expect(screen.getByText(/37/)).toBeInTheDocument();
   });
 
@@ -352,7 +370,9 @@ describe("MonitorDetail", () => {
 
     render(<MonitorDetail />, { wrapper: Wrapper });
 
-    expect(screen.getByText("HTTP 200")).toBeInTheDocument();
-    expect(screen.getByText("100ms")).toBeInTheDocument();
+    const httpCodes = screen.getAllByText("HTTP 200");
+    expect(httpCodes).toHaveLength(3);
+    const msValues = screen.getAllByText("100ms");
+    expect(msValues).toHaveLength(3);
   });
 });
