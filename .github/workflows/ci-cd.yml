@@ -172,6 +172,8 @@ jobs:
           SMTP_HOST: localhost
           SMTP_PORT: 1025
           FROM_EMAIL: test@localhost
+          SUPABASE_URL: "https://mock-url.supabase.co"
+          SUPABASE_SERVICE_KEY: "mock-key-1234567890"
         run: |
           (cd ../backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 &)
           (npx vite preview --port 5173 --host 0.0.0.0 &)
