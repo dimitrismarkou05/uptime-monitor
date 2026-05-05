@@ -3,12 +3,13 @@ import type {
   MonitorCreate,
   MonitorRead,
   MonitorUpdate,
+  MonitorListResponse,
 } from "../types/monitor";
 
 export async function getMonitors(
   skip: number = 0,
   limit: number = 100,
-): Promise<MonitorRead[]> {
+): Promise<MonitorListResponse> {
   const { data } = await apiClient.get(
     `/monitors/?skip=${skip}&limit=${limit}`,
   );

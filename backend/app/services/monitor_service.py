@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.monitor import Monitor
@@ -49,6 +49,12 @@ class MonitorService:
             .limit(limit)
         )
         return result.scalars().all()
+
+    async def count_by_user(self, user_id: UUID) -> int:
+        result = await self.db.execute(
+            select(func.count()).where(Monitor.user_id == user_id)
+        )
+        return result.scalar() or 0
 
     async def get_by_id(self, monitor_id: str, user_id: UUID) -> Optional[Monitor]:
         """Get monitor by ID, coercing UUID types for SQLite compatibility."""

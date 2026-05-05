@@ -11,7 +11,9 @@ class TestMonitorAPI:
     async def test_list_monitors_empty(self, async_client):
         resp = await async_client.get("/api/v1/monitors/")
         assert resp.status_code == 200
-        assert resp.json() == []
+        data = resp.json()
+        assert data["items"] == []
+        assert data["total"] == 0
 
     async def test_create_and_get_monitor(self, async_client):
         payload = {
@@ -60,7 +62,7 @@ class TestMonitorAPI:
 
         get_resp = await async_client.get(f"/api/v1/monitors/{monitor_id}")
         assert get_resp.status_code == 404
-        
+
     async def test_update_monitor_not_found(self, async_client):
         patch_resp = await async_client.patch(
             f"/api/v1/monitors/{uuid4()}",
@@ -71,7 +73,7 @@ class TestMonitorAPI:
     async def test_delete_monitor_not_found(self, async_client):
         del_resp = await async_client.delete(f"/api/v1/monitors/{uuid4()}")
         assert del_resp.status_code == 404
-        
+
     async def test_get_monitor_not_found(self, async_client):
         from uuid import uuid4
 
@@ -88,4 +90,7 @@ class TestMonitorAPI:
 
         resp = await async_client.get("/api/v1/monitors/?skip=0&limit=1")
         assert resp.status_code == 200
-        assert isinstance(resp.json(), list)
+        data = resp.json()
+        assert isinstance(data["items"], list)
+        assert data["total"] >= 1
+        assert len(data["items"]) <= 1

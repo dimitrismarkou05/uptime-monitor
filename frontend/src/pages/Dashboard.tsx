@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [page, setPage] = useState(0);
 
   const {
-    data: monitors,
+    data: response,
     isLoading,
     error,
   } = useMonitors(page * PAGE_SIZE, PAGE_SIZE);
@@ -36,6 +36,10 @@ export default function Dashboard() {
 
   const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } =
     useMonitorStore();
+
+  const monitors = response?.items ?? [];
+  const totalItems = response?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 
   const handleCreate = async (data: MonitorCreate) => {
     await createMonitor.mutateAsync(data);
@@ -55,7 +59,7 @@ export default function Dashboard() {
     await deleteMonitor.mutateAsync(id);
   };
 
-  const filteredMonitors = monitors?.filter((m) => {
+  const filteredMonitors = monitors.filter((m) => {
     const matchesSearch = m.url
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -64,9 +68,8 @@ export default function Dashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  const upCount = monitors?.filter((m) => m.alert_status === "UP").length ?? 0;
-  const downCount =
-    monitors?.filter((m) => m.alert_status === "DOWN").length ?? 0;
+  const upCount = monitors.filter((m) => m.alert_status === "UP").length;
+  const downCount = monitors.filter((m) => m.alert_status === "DOWN").length;
 
   return (
     <DashboardShell>
@@ -153,7 +156,7 @@ export default function Dashboard() {
             </div>
 
             <MonitorList
-              monitors={filteredMonitors || []}
+              monitors={filteredMonitors}
               onDelete={handleDelete}
               onToggle={handleToggle}
               onEdit={(m) => setEditingMonitor(m)}
@@ -168,10 +171,12 @@ export default function Dashboard() {
               >
                 Previous
               </button>
-              <span className="text-sm text-gray-500">Page {page + 1}</span>
+              <span className="text-sm text-gray-500">
+                Page {page + 1} of {totalPages}
+              </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
-                disabled={!monitors || monitors.length < PAGE_SIZE}
+                disabled={page >= totalPages - 1}
                 className="px-3 py-1 border rounded text-sm disabled:opacity-50 enabled:hover:bg-gray-100 enabled:cursor-pointer cursor-default transition-colors"
               >
                 Next

@@ -30,3 +30,8 @@ class MonitorRead(MonitorBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MonitorListResponse(BaseModel):
+    items: list[MonitorRead]
+    total: int

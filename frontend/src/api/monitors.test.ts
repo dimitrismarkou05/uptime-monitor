@@ -20,10 +20,29 @@ vi.mock("./client", () => ({
 describe("monitors API", () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it("getMonitors requests with pagination", async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ id: "1" }] });
-    await getMonitors(0, 10);
+  it("getMonitors requests with pagination and returns response with items and total", async () => {
+    const mockResponse = {
+      items: [
+        {
+          id: "1",
+          url: "https://x.com/",
+          interval_seconds: 300,
+          is_active: true,
+          user_id: "u1",
+          alert_status: "UP",
+          last_alerted_at: null,
+          next_check_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ],
+      total: 1,
+    };
+    vi.mocked(apiClient.get).mockResolvedValue({ data: mockResponse });
+    const result = await getMonitors(0, 10);
     expect(apiClient.get).toHaveBeenCalledWith("/monitors/?skip=0&limit=10");
+    expect(result.items).toHaveLength(1);
+    expect(result.total).toBe(1);
   });
 
   it("getMonitor requests by id", async () => {

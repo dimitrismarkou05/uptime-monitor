@@ -45,18 +45,26 @@ const mockMonitor = {
   updated_at: new Date().toISOString(),
 };
 
+const makeMonitorsHook = (
+  items: (typeof mockMonitor)[] = [mockMonitor],
+  total: number = items.length,
+  isLoading = false,
+  error = null,
+): MonitorsHook =>
+  ({
+    data: { items, total },
+    isLoading,
+    error,
+  }) as unknown as MonitorsHook;
+
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     useMonitorStore.setState({ searchQuery: "", statusFilter: "ALL" });
   });
 
-  const setup = () => {
-    vi.mocked(useMonitors).mockReturnValue({
-      data: [mockMonitor],
-      isLoading: false,
-      error: null,
-    } as unknown as MonitorsHook);
+  const setup = (items = [mockMonitor], total = items.length) => {
+    vi.mocked(useMonitors).mockReturnValue(makeMonitorsHook(items, total));
     vi.mocked(useCreateMonitor).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
@@ -171,11 +179,11 @@ describe("Dashboard", () => {
       screen.getByRole("button", { name: /previous/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
-    expect(screen.getByText(/page\s+1/i)).toBeInTheDocument();
+    expect(screen.getByText(/page\s+1\s+of\s+1/i)).toBeInTheDocument();
   });
 
-  it("disables next button when fewer monitors than page size", () => {
-    setup();
+  it("disables next button on last page", () => {
+    setup([mockMonitor], 1);
     render(<Dashboard />, { wrapper: Wrapper });
     expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
   });
@@ -188,7 +196,7 @@ describe("Dashboard", () => {
 
   it("renders empty state message when no monitors exist", () => {
     vi.mocked(useMonitors).mockReturnValue({
-      data: [],
+      data: { items: [], total: 0 },
       isLoading: false,
       error: null,
       isFetching: false,
@@ -197,29 +205,26 @@ describe("Dashboard", () => {
 
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Matches the text in the UI
     expect(screen.getByText(/No monitors yet/i)).toBeInTheDocument();
   });
 
   it("handles clicking next and previous page", async () => {
-    // Override the mock to return 11 items so the "Next" button is enabled
-    vi.mocked(useMonitors).mockReturnValue({
-      data: Array.from({ length: 11 }).map((_, i) => ({
+    setup(
+      Array.from({ length: 11 }).map((_, i) => ({
         ...mockMonitor,
         id: String(i),
       })),
-      isLoading: false,
-      error: null,
-    } as unknown as MonitorsHook);
+      11,
+    );
 
     render(<Dashboard />, { wrapper: Wrapper });
 
     const nextBtn = screen.getByRole("button", { name: /next/i });
     fireEvent.click(nextBtn);
-    expect(screen.getByText(/page 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 2 of 2/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /previous/i }));
-    expect(screen.getByText(/page 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
   });
 
   it("keeps monitor visible when search matches and status is ALL", () => {
@@ -246,8 +251,6 @@ describe("Dashboard", () => {
     setup();
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Find and click the edit button in MonitorList
-    // (Assuming MonitorList renders an edit button per monitor)
     const editButton = screen.getByRole("button", { name: /edit/i });
     fireEvent.click(editButton);
 
@@ -266,11 +269,8 @@ describe("Dashboard", () => {
 
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Open edit modal
     fireEvent.click(screen.getByRole("button", { name: /edit/i }));
 
-    // Fill form and save — assuming EditMonitorModal has a form with URL input and Save button
-    // If EditMonitorModal renders MonitorForm inside:
     fireEvent.change(screen.getByPlaceholderText("https://example.com"), {
       target: { value: "https://edited.com" },
     });
@@ -287,15 +287,14 @@ describe("Dashboard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("next button enabled at exact page size", () => {
-    vi.mocked(useMonitors).mockReturnValue({
-      data: Array.from({ length: 10 }).map((_, i) => ({
+  it("next button enabled when more pages exist", () => {
+    setup(
+      Array.from({ length: 10 }).map((_, i) => ({
         ...mockMonitor,
         id: String(i),
       })),
-      isLoading: false,
-      error: null,
-    } as unknown as MonitorsHook);
+      11,
+    );
 
     render(<Dashboard />, { wrapper: Wrapper });
     expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
@@ -319,13 +318,11 @@ describe("Dashboard", () => {
     setup();
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Open the form
     fireEvent.click(screen.getByRole("button", { name: /add monitor/i }));
     expect(
       screen.getByRole("heading", { name: /new monitor/i }),
     ).toBeInTheDocument();
 
-    // Click the cancel button inside MonitorForm
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(
       screen.queryByRole("heading", { name: /new monitor/i }),
@@ -336,13 +333,11 @@ describe("Dashboard", () => {
     setup();
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Open the edit modal
     fireEvent.click(screen.getByRole("button", { name: /edit/i }));
     expect(
       screen.getByRole("heading", { name: /edit monitor/i }),
     ).toBeInTheDocument();
 
-    // Click the cancel button inside EditMonitorModal
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(
       screen.queryByRole("heading", { name: /edit monitor/i }),
@@ -358,7 +353,6 @@ describe("Dashboard", () => {
 
     render(<Dashboard />, { wrapper: Wrapper });
 
-    // Check for the presence of the animate-spin class
     expect(document.querySelector(".animate-spin")).toBeInTheDocument();
   });
 });

@@ -38,14 +38,20 @@ const mockMonitor = {
   updated_at: new Date().toISOString(),
 };
 
+const mockListResponse = {
+  items: [mockMonitor],
+  total: 1,
+};
+
 describe("useMonitors", () => {
-  it("returns monitor list", async () => {
-    vi.mocked(monitorsApi.getMonitors).mockResolvedValue([mockMonitor]);
+  it("returns monitor list with items and total", async () => {
+    vi.mocked(monitorsApi.getMonitors).mockResolvedValue(mockListResponse);
     const { result } = renderHook(() => useMonitors(), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([mockMonitor]);
+    expect(result.current.data?.items).toEqual([mockMonitor]);
+    expect(result.current.data?.total).toBe(1);
   });
 
   it("fetches single monitor", async () => {

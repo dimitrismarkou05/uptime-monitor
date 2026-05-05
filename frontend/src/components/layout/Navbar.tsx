@@ -9,7 +9,7 @@ export default function Navbar() {
       <div className="flex items-center justify-between">
         <Link className="flex items-center gap-2" to={"/"}>
           <div className="h-7 w-7 pt-1">
-            <img src="../../../public/favicon.svg" alt="Uptime Monitor" />
+            <img src="/favicon.svg" alt="Uptime Monitor" />
           </div>
           <span className="font-semibold text-gray-900">Uptime Monitor</span>
         </Link>

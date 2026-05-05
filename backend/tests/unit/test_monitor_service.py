@@ -61,6 +61,33 @@ class TestMonitorService:
         paginated = await service.list_by_user(sample_user_data["id"], skip=2, limit=2)
         assert len(paginated) == 2
 
+    async def test_count_by_user(self, db_session, sample_user_data):
+        from app.models.user import User
+        from app.models.monitor import Monitor
+        user = User(**sample_user_data)
+        db_session.add(user)
+        await db_session.commit()
+
+        service = MonitorService(db_session)
+
+        # Initially no monitors
+        count = await service.count_by_user(sample_user_data["id"])
+        assert count == 0
+
+        # Add 3 monitors
+        for i in range(3):
+            m = Monitor(
+                id=uuid4(),
+                url=f"https://site{i}.com",
+                interval_seconds=300,
+                user_id=sample_user_data["id"],
+            )
+            db_session.add(m)
+        await db_session.commit()
+
+        count = await service.count_by_user(sample_user_data["id"])
+        assert count == 3
+
     async def test_get_by_id(self, db_session, sample_user_data):
         from app.models.user import User
         from app.models.monitor import Monitor
@@ -84,11 +111,11 @@ class TestMonitorService:
 
         not_found = await service.get_by_id(str(uuid4()), sample_user_data["id"])
         assert not_found is None
-        
+
     async def test_get_by_id_with_string_uuid(self, db_session, sample_user_data):
         from app.models.user import User
         from app.models.monitor import Monitor
-        
+
         user = User(**sample_user_data)
         db_session.add(user)
         await db_session.commit()
@@ -150,7 +177,7 @@ class TestMonitorService:
 
         toggled_again = await service.toggle_active(str(monitor.id), sample_user_data["id"])
         assert toggled_again.is_active is True
- 
+
     async def test_toggle_active_not_found(self, db_session, sample_user_data):
         from app.models.user import User
 
@@ -161,7 +188,7 @@ class TestMonitorService:
         service = MonitorService(db_session)
         result = await service.toggle_active(str(uuid4()), sample_user_data["id"])
         assert result is None
-        
+
     async def test_delete_monitor(self, db_session, sample_user_data):
         from app.models.user import User
         from app.models.monitor import Monitor
@@ -180,7 +207,7 @@ class TestMonitorService:
 
         service = MonitorService(db_session)
         await service.delete(monitor)
-        
+
         result = await db_session.execute(
             select(Monitor).where(Monitor.id == monitor.id)
         )
@@ -227,7 +254,7 @@ class TestMonitorServiceSync:
         assert monitor.next_check_at is not None
         assert monitor.next_check_at > now
         assert monitor.next_check_at == now + timedelta(seconds=300)
-        
+
     def test_update_next_check_defaults_to_now(self):
         db = MagicMock()
         service = MonitorService(db)
@@ -235,21 +262,21 @@ class TestMonitorServiceSync:
 
         service.update_next_check_sync(monitor)
         assert monitor.next_check_at is not None
-        
+
     def test_get_due_monitors_defaults_to_now(self):
         db = MagicMock()
         service = MonitorService(db)
-        
+
         now = datetime.now(timezone.utc)
         due_monitor = Mock(
             id=uuid4(),
             is_active=True,
             next_check_at=now - timedelta(minutes=5),
         )
-        
+
         result = MagicMock()
         result.scalars.return_value.all.return_value = [due_monitor]
         db.execute.return_value = result
-        
+
         due = service.get_due_monitors_sync(db)
         assert len(due) == 1

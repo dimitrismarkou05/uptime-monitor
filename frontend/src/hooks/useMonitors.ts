@@ -6,12 +6,12 @@ import {
   updateMonitor,
   deleteMonitor,
 } from "../api/monitors";
-import type { MonitorUpdate } from "../types/monitor";
+import type { MonitorUpdate, MonitorListResponse } from "../types/monitor";
 
 const MONITORS_KEY = "monitors";
 
 export function useMonitors(skip: number = 0, limit: number = 100) {
-  return useQuery({
+  return useQuery<MonitorListResponse>({
     queryKey: [MONITORS_KEY, skip, limit],
     queryFn: () => getMonitors(skip, limit),
   });

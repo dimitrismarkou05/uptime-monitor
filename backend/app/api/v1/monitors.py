@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_user
 from app.core.rate_limiter import limiter
-from app.schemas.monitor import MonitorCreate, MonitorRead, MonitorUpdate
+from app.schemas.monitor import (
+    MonitorCreate,
+    MonitorRead,
+    MonitorUpdate,
+    MonitorListResponse,
+)
 from app.services.monitor_service import MonitorService
 
 router = APIRouter()
@@ -22,7 +27,7 @@ async def create_monitor(
     return monitor
 
 
-@router.get("/", response_model=list[MonitorRead])
+@router.get("/", response_model=MonitorListResponse)
 @limiter.limit("60/minute")  
 async def list_monitors(
     request: Request,  
@@ -32,7 +37,9 @@ async def list_monitors(
     limit: int = Query(100, ge=1, le=500),
 ):
     service = MonitorService(db)
-    return await service.list_by_user(current_user["id"], skip, limit)
+    items = await service.list_by_user(current_user["id"], skip, limit)
+    total = await service.count_by_user(current_user["id"])
+    return MonitorListResponse(items=items, total=total)
 
 
 @router.get("/{monitor_id}", response_model=MonitorRead)
