@@ -37,9 +37,20 @@ describe("formatDateTime", () => {
     expect(formatDateTime(undefined)).toBe("N/A");
   });
 
-  it("formats ISO string", () => {
-    const result = formatDateTime("2024-01-15T14:30:00Z");
+  it("formats ISO string with seconds", () => {
+    const result = formatDateTime("2024-01-15T14:30:45Z");
     expect(result).toContain("Jan");
     expect(result).toContain("15");
+    expect(result).toContain(":"); // has time separator
+    // Should include seconds (two digits after the last colon)
+    const parts = result.split(":");
+    expect(parts.length).toBeGreaterThanOrEqual(3); // HH:MM:SS or similar
+  });
+
+  it("includes seconds in the output", () => {
+    // Use a fixed timestamp we can verify
+    const result = formatDateTime("2024-05-05T05:28:37Z");
+    // The output should contain "37" for the seconds
+    expect(result).toContain("37");
   });
 });

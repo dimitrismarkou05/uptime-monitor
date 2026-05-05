@@ -1,4 +1,4 @@
-from uuid import UUID  # add this import
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,18 +11,26 @@ from app.schemas.ping_log import PingLogRead
 
 router = APIRouter()
 
+
 def _coerce_monitor_id(monitor_id: str) -> UUID:
     try:
         return UUID(monitor_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid monitor ID format")
 
-@router.get("/monitor/{monitor_id}", response_model=list[PingLogRead])
+
+class PingListResponse:
+    """Simple response model for paginated pings."""
+    pass
+
+
+@router.get("/monitor/{monitor_id}", response_model=dict)
 @limiter.limit("60/minute")
 async def get_monitor_pings(
     request: Request,
     monitor_id: str,
-    limit: int = Query(100, ge=1, le=1000),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -37,13 +45,25 @@ async def get_monitor_pings(
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
 
+    # Get total count for pagination
+    total = await db.scalar(
+        select(func.count()).where(PingLog.monitor_id == monitor_uuid)
+    )
+
+    # Get paginated results
     result = await db.execute(
         select(PingLog)
         .where(PingLog.monitor_id == monitor_uuid)
         .order_by(PingLog.timestamp.desc())
+        .offset(skip)
         .limit(limit)
     )
-    return result.scalars().all()
+    items = result.scalars().all()
+
+    return {
+        "items": items,
+        "total": total or 0,
+    }
 
 
 @router.get("/monitor/{monitor_id}/stats")

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMonitor } from "../hooks/useMonitors";
 import { useMonitorStats, useMonitorPings } from "../hooks/usePings";
@@ -6,12 +7,24 @@ import DashboardShell from "../components/layout/DashboardShell";
 import StatusIndicator from "../components/monitors/StatusIndicator";
 import UptimeChart from "../components/monitors/UptimeChart";
 
+const PINGS_PAGE_SIZE = 10;
+
 export default function MonitorDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [pingsPage, setPingsPage] = useState(0);
+
   const { data: monitor, isLoading: monitorLoading } = useMonitor(id!);
   const { data: stats } = useMonitorStats(id!);
-  const { data: pings } = useMonitorPings(id!, 10);
+  const { data: pingsResponse, isLoading: pingsLoading } = useMonitorPings(
+    id!,
+    pingsPage * PINGS_PAGE_SIZE,
+    PINGS_PAGE_SIZE,
+  );
+
+  const pings = pingsResponse?.items ?? [];
+  const totalPings = pingsResponse?.total ?? 0;
+  const totalPingsPages = Math.max(1, Math.ceil(totalPings / PINGS_PAGE_SIZE));
 
   if (monitorLoading) {
     return (
@@ -84,37 +97,78 @@ export default function MonitorDetail() {
           <UptimeChart monitorId={id!} />
         </div>
 
-        {/* Recent Pings */}
+        {/* Recent Pings — Paginated */}
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Recent Checks
-          </h2>
-          <div className="space-y-2">
-            {pings?.map((ping) => (
-              <div
-                key={ping.id}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-2 h-2 rounded-full ${ping.is_up ? "bg-emerald-400" : "bg-red-400"}`}
-                  />
-                  <span className="text-sm text-gray-600">
-                    {formatDateTime(ping.timestamp)}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {ping.status_code && (
-                    <span className="mr-3">HTTP {ping.status_code}</span>
-                  )}
-                  {ping.response_ms && <span>{ping.response_ms}ms</span>}
-                  {ping.error_message && (
-                    <span className="text-red-500">{ping.error_message}</span>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Recent Checks
+            </h2>
+            <span className="text-sm text-gray-500">
+              {totalPings} total checks
+            </span>
           </div>
+
+          {pingsLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+            </div>
+          ) : pings.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">
+              No check data available yet.
+            </p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {pings.map((ping) => (
+                  <div
+                    key={ping.id}
+                    className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-2 h-2 rounded-full ${ping.is_up ? "bg-emerald-400" : "bg-red-400"}`}
+                      />
+                      <span className="text-sm text-gray-600">
+                        {formatDateTime(ping.timestamp)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {ping.status_code && (
+                        <span className="mr-3">HTTP {ping.status_code}</span>
+                      )}
+                      {ping.response_ms && <span>{ping.response_ms}ms</span>}
+                      {ping.error_message && (
+                        <span className="text-red-500">
+                          {ping.error_message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => setPingsPage((p) => Math.max(0, p - 1))}
+                  disabled={pingsPage === 0}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 enabled:hover:bg-gray-100 enabled:cursor-pointer cursor-default transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-500">
+                  Page {pingsPage + 1} of {totalPingsPages}
+                </span>
+                <button
+                  onClick={() => setPingsPage((p) => p + 1)}
+                  disabled={pingsPage >= totalPingsPages - 1}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 enabled:hover:bg-gray-100 enabled:cursor-pointer cursor-default transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </DashboardShell>

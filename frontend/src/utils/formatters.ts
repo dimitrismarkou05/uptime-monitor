@@ -15,7 +15,7 @@ export function formatPercentage(value: number, decimals: number = 2): string {
 }
 
 /**
- * Standardizes datetime display across the app
+ * Standardizes datetime display across the app (includes seconds)
  */
 export function formatDateTime(isoString: string | null | undefined): string {
   if (!isoString) return "N/A";
@@ -24,5 +24,6 @@ export function formatDateTime(isoString: string | null | undefined): string {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
   });
 }

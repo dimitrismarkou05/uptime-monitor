@@ -24,32 +24,38 @@ describe("UptimeChart", () => {
   });
 
   it("shows empty state", async () => {
-    vi.mocked(pingsApi.getMonitorPings).mockResolvedValue([]);
+    vi.mocked(pingsApi.getMonitorPings).mockResolvedValue({
+      items: [],
+      total: 0,
+    });
     render(<UptimeChart monitorId="m1" />, { wrapper: Wrapper });
     await screen.findByText(/no ping data available/i);
   });
 
   it("renders bars for pings", async () => {
-    vi.mocked(pingsApi.getMonitorPings).mockResolvedValue([
-      {
-        id: "p1",
-        monitor_id: "m1",
-        timestamp: new Date().toISOString(),
-        status_code: 200,
-        response_ms: 100,
-        is_up: true,
-        error_message: null,
-      },
-      {
-        id: "p2",
-        monitor_id: "m1",
-        timestamp: new Date().toISOString(),
-        status_code: 500,
-        response_ms: null,
-        is_up: false,
-        error_message: "err",
-      },
-    ]);
+    vi.mocked(pingsApi.getMonitorPings).mockResolvedValue({
+      items: [
+        {
+          id: "p1",
+          monitor_id: "m1",
+          timestamp: new Date().toISOString(),
+          status_code: 200,
+          response_ms: 100,
+          is_up: true,
+          error_message: null,
+        },
+        {
+          id: "p2",
+          monitor_id: "m1",
+          timestamp: new Date().toISOString(),
+          status_code: 500,
+          response_ms: null,
+          is_up: false,
+          error_message: "err",
+        },
+      ],
+      total: 2,
+    });
     render(<UptimeChart monitorId="m1" />, { wrapper: Wrapper });
 
     // Use getAllByText and verify at least one "checks" element exists
@@ -61,26 +67,29 @@ describe("UptimeChart", () => {
   });
 
   it("renders yellow text for 95-98% uptime", async () => {
-    vi.mocked(pingsApi.getMonitorPings).mockResolvedValue([
-      ...Array.from({ length: 96 }).map((_, i) => ({
-        id: `p${i}`,
-        monitor_id: "m1",
-        timestamp: new Date().toISOString(),
-        status_code: 200,
-        response_ms: 100,
-        is_up: true,
-        error_message: null,
-      })),
-      ...Array.from({ length: 4 }).map((_, i) => ({
-        id: `f${i}`,
-        monitor_id: "m1",
-        timestamp: new Date().toISOString(),
-        status_code: 500,
-        response_ms: null,
-        is_up: false,
-        error_message: "err",
-      })),
-    ]);
+    vi.mocked(pingsApi.getMonitorPings).mockResolvedValue({
+      items: [
+        ...Array.from({ length: 96 }).map((_, i) => ({
+          id: `p${i}`,
+          monitor_id: "m1",
+          timestamp: new Date().toISOString(),
+          status_code: 200,
+          response_ms: 100,
+          is_up: true,
+          error_message: null,
+        })),
+        ...Array.from({ length: 4 }).map((_, i) => ({
+          id: `f${i}`,
+          monitor_id: "m1",
+          timestamp: new Date().toISOString(),
+          status_code: 500,
+          response_ms: null,
+          is_up: false,
+          error_message: "err",
+        })),
+      ],
+      total: 100,
+    });
 
     render(<UptimeChart monitorId="m1" />, { wrapper: Wrapper });
 

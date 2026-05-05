@@ -5,7 +5,9 @@ interface UptimeChartProps {
 }
 
 export default function UptimeChart({ monitorId }: UptimeChartProps) {
-  const { data: pings, isLoading } = useMonitorPings(monitorId, 50);
+  // Use a high limit for the chart to show meaningful bars, paginated list handles display
+  const { data: pingsResponse, isLoading } = useMonitorPings(monitorId, 0, 50);
+  const pings = pingsResponse?.items ?? [];
 
   if (isLoading) {
     return (

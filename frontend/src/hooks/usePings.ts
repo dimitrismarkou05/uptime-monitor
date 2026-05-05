@@ -1,10 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMonitorPings, getMonitorStats } from "../api/pings";
 
-export function useMonitorPings(monitorId: string, limit = 100) {
+export function useMonitorPings(
+  monitorId: string,
+  skip: number = 0,
+  limit: number = 10,
+) {
   return useQuery({
-    queryKey: ["pings", monitorId, limit],
-    queryFn: () => getMonitorPings(monitorId, limit),
+    queryKey: ["pings", monitorId, skip, limit],
+    queryFn: () => getMonitorPings(monitorId, skip, limit),
     enabled: !!monitorId,
   });
 }
