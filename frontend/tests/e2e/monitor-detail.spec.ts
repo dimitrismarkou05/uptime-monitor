@@ -1,8 +1,19 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Monitor Detail", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route("**/api/v1/users/sync*", async (route) => {
+  test.beforeEach(async ({ context, page }) => {
+    // IMPORTANT: Register catch-all FIRST so it has LOWEST precedence.
+    // Playwright checks handlers in REVERSE order (last added = first checked).
+    await context.route("**/api/v1/**", async (route) => {
+      const url = route.request().url();
+      console.log(
+        `[TEST DEBUG] Unhandled API request: ${route.request().method()} ${url}`,
+      );
+      await route.abort("failed");
+    });
+
+    // Mock user sync endpoint (handles all methods: POST, GET, etc.)
+    await context.route("**/api/v1/users/sync*", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -14,58 +25,62 @@ test.describe("Monitor Detail", () => {
       });
     });
 
-    // Correct shape for GET /api/v1/monitors/ – returning { items, total }
-    await page.route(
-      (url) => url.pathname === "/api/v1/monitors/",
-      async (route) => {
-        if (route.request().method() === "GET") {
-          await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              items: [
-                {
-                  id: "mon-123",
-                  user_id: "test-user-id",
-                  url: "https://google.com/",
-                  interval_seconds: 300,
-                  is_active: true,
-                  alert_status: "UP",
-                  last_alerted_at: null,
-                  next_check_at: null,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                },
-              ],
-              total: 1,
-            }),
-          });
-        } else {
-          await route.fallback();
-        }
-      },
-    );
-
-    await page.route("**/api/v1/monitors/mon-123*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "mon-123",
-          user_id: "test-user-id",
-          url: "https://google.com/",
-          interval_seconds: 300,
-          is_active: true,
-          alert_status: "UP",
-          last_alerted_at: null,
-          next_check_at: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }),
-      });
+    // Mock monitors list endpoint
+    await context.route("**/api/v1/monitors/*", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: [
+              {
+                id: "mon-123",
+                user_id: "test-user-id",
+                url: "https://google.com/",
+                interval_seconds: 300,
+                is_active: true,
+                alert_status: "UP",
+                last_alerted_at: null,
+                next_check_at: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            ],
+            total: 1,
+          }),
+        });
+      } else {
+        await route.continue();
+      }
     });
 
-    await page.route(
+    // Mock single monitor endpoint (GET only)
+    await context.route("**/api/v1/monitors/mon-123", async (route) => {
+      const method = route.request().method();
+      if (method === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "mon-123",
+            user_id: "test-user-id",
+            url: "https://google.com/",
+            interval_seconds: 300,
+            is_active: true,
+            alert_status: "UP",
+            last_alerted_at: null,
+            next_check_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    // Mock pings stats endpoint
+    await context.route(
       "**/api/v1/pings/monitor/mon-123/stats*",
       async (route) => {
         await route.fulfill({
@@ -82,9 +97,11 @@ test.describe("Monitor Detail", () => {
       },
     );
 
-    // Updated to return the paginated response format
-    await page.route(
-      "**/api/v1/pings/monitor/mon-123?skip=0&limit=10*",
+    // FIX: Add default mock for pings list endpoint.
+    // This handles the limit=50 request that the monitor detail page makes.
+    // Tests that need specific data (like pagination tests) can override this.
+    await context.route(
+      "**/api/v1/pings/monitor/mon-123?skip=0&limit=*",
       async (route) => {
         await route.fulfill({
           status: 200,
@@ -107,16 +124,21 @@ test.describe("Monitor Detail", () => {
       },
     );
 
+    // Set up auth token
     await page.goto("http://localhost:5173");
     await page.evaluate(() => {
       localStorage.setItem("access_token", "fake-test-token");
     });
 
+    // Navigate to dashboard (triggers API calls that should be mocked)
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
   });
 
   test("navigates to monitor detail and shows stats", async ({ page }) => {
+    // This test uses the default pings mock from beforeEach
+    // No need to add a separate mock
+
     await page.getByRole("button", { name: /google\.com/ }).click();
     await expect(page).toHaveURL("/monitor/mon-123");
     await expect(
@@ -127,6 +149,9 @@ test.describe("Monitor Detail", () => {
   });
 
   test("shows back button to dashboard", async ({ page }) => {
+    // This test uses the default pings mock from beforeEach
+    // No need to add a separate mock
+
     await page.goto("/monitor/mon-123");
     await expect(
       page.getByRole("heading", { name: /google\.com/ }),
@@ -157,7 +182,7 @@ test.describe("Monitor Detail", () => {
     );
 
     await page.route(
-      "**/api/v1/pings/monitor/invalid-id?skip=0&limit=10*",
+      "**/api/v1/pings/monitor/invalid-id?skip=0&limit=*",
       async (route) => {
         await route.fulfill({
           status: 200,
@@ -176,7 +201,7 @@ test.describe("Monitor Detail", () => {
   });
 
   test("shows pagination controls on monitor detail", async ({ page }) => {
-    // Mock with 25 total pings to trigger pagination
+    // Override the default pings mock with 25 total pings to trigger pagination
     await page.route(
       "**/api/v1/pings/monitor/mon-123?skip=0&limit=10*",
       async (route) => {
